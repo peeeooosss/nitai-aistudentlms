@@ -6,6 +6,7 @@ export interface Module {
   phaseName: string
   description: string
   creditsReward: number
+  videoUrl?: string
 }
 
 const phase1Titles = [
@@ -116,6 +117,7 @@ export const modules: Module[] = [
     phaseName: 'Hustler',
     description: `Master the fundamentals of AI literacy, prompt engineering, and content creation. Day ${i + 1} of your journey to financial freedom.`,
     creditsReward: 25 + (i % 3) * 10,
+    videoUrl: i === 0 ? '/videos/day1.mp4' : undefined,
   })),
   ...phase2Titles.map((title, i) => ({
     id: 31 + i,

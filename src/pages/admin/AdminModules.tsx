@@ -1,13 +1,29 @@
 import { motion } from 'framer-motion'
 import { useState } from 'react'
-import { modules, getPhaseGradient } from '../../data/modules'
+import { modules, getPhaseGradient, type Module } from '../../data/modules'
 import { Search, Edit3, Save, X } from 'lucide-react'
+
+const getModuleData = (mod: Module) => {
+  const key = `nitai_module_${mod.id}`
+  try {
+    const stored = JSON.parse(localStorage.getItem(key) || '{}')
+    return stored as Partial<{ title: string; videoUrl: string; creditsReward: number }>
+  } catch {
+    return {}
+  }
+}
+
+const getDisplayUrl = (mod: Module): string => {
+  const saved = getModuleData(mod)
+  return saved.videoUrl || mod.videoUrl || `https://youtube.com/watch?v=module-${mod.dayNumber}`
+}
 
 export default function AdminModules() {
   const [search, setSearch] = useState('')
   const [editId, setEditId] = useState<number | null>(null)
   const [editData, setEditData] = useState({ title: '', videoUrl: '', creditsReward: 0 })
   const [phaseFilter, setPhaseFilter] = useState<number | null>(null)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const filtered = modules.filter((m) => {
     const matchesSearch = m.title.toLowerCase().includes(search.toLowerCase())
@@ -15,12 +31,21 @@ export default function AdminModules() {
     return matchesSearch && matchesPhase
   })
 
-  const startEdit = (mod: typeof modules[0]) => {
+  const startEdit = (mod: Module) => {
     setEditId(mod.id)
-    setEditData({ title: mod.title, videoUrl: `https://youtube.com/watch?v=module-${mod.dayNumber}`, creditsReward: mod.creditsReward })
+    const saved = getModuleData(mod)
+    setEditData({
+      title: saved.title || mod.title,
+      videoUrl: saved.videoUrl || mod.videoUrl || '',
+      creditsReward: saved.creditsReward ?? mod.creditsReward,
+    })
   }
 
   const saveEdit = () => {
+    if (editId !== null) {
+      localStorage.setItem(`nitai_module_${editId}`, JSON.stringify(editData))
+      setRefreshKey((k) => k + 1)
+    }
     setEditId(null)
   }
 
@@ -79,7 +104,7 @@ export default function AdminModules() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {filtered.map((mod) => (
-                  <tr key={mod.id} className="hover:bg-white/[0.02] transition-colors group">
+                  <tr key={`${mod.id}-${refreshKey}`} className="hover:bg-white/[0.02] transition-colors group">
                     <td className="px-4 py-3">
                       <span className="text-sm font-bold text-white">{mod.dayNumber}</span>
                     </td>
@@ -108,7 +133,7 @@ export default function AdminModules() {
                         />
                       ) : (
                         <span className="text-xs text-white/30 font-mono truncate block max-w-[200px]">
-                          https://youtube.com/watch?v=module-{mod.dayNumber}
+                          {getDisplayUrl(mod)}
                         </span>
                       )}
                     </td>

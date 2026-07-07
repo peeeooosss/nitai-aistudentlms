@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { NitaiLogoFull } from '../components/NitaiLogo'
-import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Sparkles, Globe, Check } from 'lucide-react'
+import { ArrowLeft, Mail, Lock, User, Eye, EyeOff, ArrowRight, Sparkles, Globe, Check } from 'lucide-react'
 
 export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false)
@@ -19,6 +19,8 @@ export default function SignUp() {
     setIsLoading(true)
     await new Promise((r) => setTimeout(r, 800))
     setIsLoading(false)
+    localStorage.setItem('nitai_user_name', name)
+    localStorage.setItem('nitai_user_email', email)
     navigate('/dashboard/student')
   }
 
@@ -29,10 +31,19 @@ export default function SignUp() {
         <div className="absolute bottom-1/3 -left-32 w-96 h-96 bg-nitai-cyan/10 rounded-full blur-3xl" />
       </div>
 
-      <header className="relative z-10 p-4 sm:p-6">
-        <Link to="/">
-          <NitaiLogoFull />
-        </Link>
+      <header className="relative z-10 px-4 sm:px-6 py-4 sm:py-6">
+        <div className="flex items-center gap-3">
+          <motion.button
+            whileHover={{ x: -3 }}
+            onClick={() => navigate('/')}
+            className="p-2 -ml-2 rounded-xl hover:bg-white/5 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-white/40" />
+          </motion.button>
+          <Link to="/">
+            <NitaiLogoFull />
+          </Link>
+        </div>
       </header>
 
       <main className="relative z-10 flex-1 flex items-center justify-center px-4 py-8">

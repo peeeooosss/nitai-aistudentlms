@@ -64,7 +64,7 @@ export function SplitHero() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <Link to="/auth/register" className="group block h-full">
+            <Link to="/auth/login" className="group block h-full">
               <div className="relative h-full rounded-2xl sm:rounded-3xl overflow-hidden border border-white/10 bg-gradient-to-br from-nitai-card/80 to-nitai-dark/80 backdrop-blur-sm transition-all duration-500 hover:border-nitai-cyan/30 hover:glow-cyan">
                 <div className="absolute inset-0 bg-gradient-to-br from-nitai-cyan/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="absolute -top-24 -right-24 w-48 h-48 bg-nitai-cyan/20 rounded-full blur-3xl group-hover:bg-nitai-cyan/30 transition-all duration-500" />

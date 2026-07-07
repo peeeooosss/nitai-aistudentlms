@@ -166,7 +166,7 @@ export function StudentPreview() {
           className="mt-8 sm:mt-12 text-center"
         >
           <Link
-            to="/auth/register"
+            to="/auth/login"
             className="group inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-nitai-accent to-nitai-cyan text-white font-semibold text-lg shadow-lg shadow-nitai-accent/20 hover:shadow-nitai-accent/40 hover:scale-[1.02] transition-all duration-300"
           >
             <Play className="w-5 h-5" />
