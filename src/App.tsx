@@ -4,6 +4,13 @@ import Landing from './pages/Landing'
 import SignIn from './pages/SignIn'
 import SignUp from './pages/SignUp'
 import Dashboard from './pages/Dashboard'
+import ModuleView from './pages/ModuleView'
+import AdminLayout from './pages/admin/AdminLayout'
+import AdminOverview from './pages/admin/AdminOverview'
+import AdminModules from './pages/admin/AdminModules'
+import AdminEvaluations from './pages/admin/AdminEvaluations'
+import AdminNotifications from './pages/admin/AdminNotifications'
+import AdminEconomy from './pages/admin/AdminEconomy'
 
 function App() {
   return (
@@ -13,6 +20,15 @@ function App() {
         <Route path="/auth/login" element={<SignIn />} />
         <Route path="/auth/register" element={<SignUp />} />
         <Route path="/dashboard/student" element={<Dashboard />} />
+        <Route path="/dashboard/student/module/:dayNumber" element={<ModuleView />} />
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="/admin/overview" replace />} />
+          <Route path="overview" element={<AdminOverview />} />
+          <Route path="modules" element={<AdminModules />} />
+          <Route path="evaluations" element={<AdminEvaluations />} />
+          <Route path="notifications" element={<AdminNotifications />} />
+          <Route path="economy" element={<AdminEconomy />} />
+        </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AnimatePresence>

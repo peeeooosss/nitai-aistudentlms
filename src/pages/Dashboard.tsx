@@ -5,23 +5,25 @@ import {
   LogOut,
   Bell,
   Settings,
-  Grid,
   Lock,
   Sparkles,
   Clock,
   Trophy,
   Coins,
   Flame,
-  Construction,
-  Wrench,
-  Hammer,
+  ChevronRight,
+  Play,
+  Zap,
+  BarChart3,
+  Rocket,
+  LockKeyhole,
+  Star,
 } from 'lucide-react'
 import { useState } from 'react'
-
-const days = Array.from({ length: 90 }, (_, i) => i + 1)
+import { modules } from '../data/modules'
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'modules'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'modules'>('modules')
   const navigate = useNavigate()
 
   return (
@@ -31,7 +33,6 @@ export default function Dashboard() {
         <div className="absolute bottom-1/3 right-1/4 w-96 h-96 bg-nitai-cyan/5 rounded-full blur-3xl" />
       </div>
 
-      {/* Header */}
       <header className="relative z-10 border-b border-white/5 bg-nitai-dark/80 backdrop-blur-xl">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
@@ -92,7 +93,6 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Mobile Tab Bar */}
       <div className="sm:hidden relative z-10 flex gap-1 p-2 bg-white/[0.02] border-b border-white/5">
         <button
           onClick={() => setActiveTab('overview')}
@@ -117,11 +117,7 @@ export default function Dashboard() {
       </div>
 
       <main className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {activeTab === 'overview' ? (
-          <OverviewContent />
-        ) : (
-          <ModulesGrid />
-        )}
+        {activeTab === 'overview' ? <OverviewContent /> : <ModulesGrid />}
       </main>
     </div>
   )
@@ -130,17 +126,16 @@ export default function Dashboard() {
 function OverviewContent() {
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Stats Bar */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4"
       >
         {[
-          { icon: Coins, label: 'Nitai Credits', value: '0', color: 'from-amber-400 to-orange-500' },
-          { icon: Flame, label: 'Day Streak', value: '0', color: 'from-red-400 to-pink-500' },
-          { icon: Clock, label: 'Total Hours', value: '0', color: 'from-cyan-400 to-blue-500' },
-          { icon: Trophy, label: 'Modules Done', value: '0 / 90', color: 'from-purple-400 to-pink-500' },
+          { icon: Coins, label: 'Nitai Credits', value: '1,250', color: 'from-amber-400 to-orange-500' },
+          { icon: Flame, label: 'Day Streak', value: '3', color: 'from-red-400 to-pink-500' },
+          { icon: Clock, label: 'Total Hours', value: '12', color: 'from-cyan-400 to-blue-500' },
+          { icon: Trophy, label: 'Modules Done', value: '1 / 90', color: 'from-purple-400 to-pink-500' },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -158,110 +153,127 @@ function OverviewContent() {
         ))}
       </motion.div>
 
-      {/* Under Construction Banner */}
-      <UnderConstructionBanner />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="glass rounded-2xl border border-white/5 p-6 sm:p-8"
+      >
+        <div className="flex items-center gap-3 mb-6">
+          <Rocket className="w-6 h-6 text-nitai-cyan" />
+          <h2 className="text-lg sm:text-xl font-bold text-white">Your Journey So Far</h2>
+        </div>
+        <div className="relative">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-nitai-cyan/30 to-nitai-cyan/10 border border-nitai-cyan/20">
+              <Sparkles className="w-6 h-6 text-nitai-cyan" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-white">Day 1: Welcome to Nitai</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-nitai-cyan/20 text-nitai-cyan">Completed</span>
+              </div>
+              <p className="text-xs text-white/30 mt-0.5">You earned 25 credits for this module</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-white/20" />
+          </div>
+          <div className="flex items-center gap-4 opacity-40">
+            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/[0.03] border border-white/5">
+              <Lock className="w-5 h-5 text-white/20" />
+            </div>
+            <div className="flex-1">
+              <span className="text-sm text-white/30">Day 2: What is AI?</span>
+              <p className="text-xs text-white/20 mt-0.5">Complete Day 1 to unlock</p>
+            </div>
+          </div>
+        </div>
+        <Link
+          to="/dashboard/student/module/1"
+          className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-nitai-accent to-nitai-cyan text-white text-sm font-semibold shadow-lg shadow-nitai-accent/20 hover:shadow-nitai-accent/40 hover:scale-[1.02] transition-all duration-300"
+        >
+          <Play className="w-4 h-4" />
+          Continue Learning
+        </Link>
+      </motion.div>
     </div>
   )
 }
 
-function UnderConstructionBanner() {
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: 0.2 }}
-      className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-white/10"
-    >
-      <div className="absolute inset-0 bg-gradient-to-br from-nitai-accent/10 via-nitai-cyan/5 to-nitai-pink/10" />
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-nitai-accent-light/30 to-transparent" />
-
-      <div className="relative p-8 sm:p-12 lg:p-16 text-center">
-        <motion.div
-          animate={{ rotate: [0, -5, 5, -5, 0] }}
-          transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-          className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-nitai-accent/20 to-nitai-cyan/20 border border-nitai-cyan/20 mb-6"
-        >
-          <Construction className="w-10 h-10 sm:w-12 sm:h-12 text-nitai-cyan" />
-        </motion.div>
-
-        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3">
-          <span className="text-gradient">Dashboard Under Construction</span>
-        </h2>
-
-        <p className="text-white/40 max-w-lg mx-auto mb-8 text-sm sm:text-base leading-relaxed">
-          We&apos;re building the most epic learning dashboard you&apos;ve ever seen.
-          Your 90-day journey, AI tutor, real-time credits — all coming soon.
-        </p>
-
-        <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mb-8">
-          {[
-            { icon: Sparkles, text: 'AI Didi Tutor' },
-            { icon: Grid, text: 'Module Grid' },
-            { icon: Trophy, text: 'Quizzes' },
-            { icon: Lock, text: 'Assignments' },
-          ].map(({ icon: Icon, text }) => (
-            <div key={text} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.03] border border-white/5 text-white/40 hover:text-white/60 hover:bg-white/[0.05] transition-all duration-300">
-              <Icon className="w-4 h-4" />
-              <span className="text-xs sm:text-sm font-medium">{text}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-white/20">
-          <Hammer className="w-4 h-4" />
-          <span>Currently in development — stay tuned for launch</span>
-          <Wrench className="w-4 h-4" />
-        </div>
-      </div>
-    </motion.div>
-  )
-}
-
 function ModulesGrid() {
-  return (
-    <div className="space-y-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass rounded-2xl border border-white/5 p-6 sm:p-8 text-center"
-      >
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-nitai-accent/20 to-nitai-cyan/20 border border-nitai-cyan/20 mb-4">
-          <Grid className="w-8 h-8 text-nitai-cyan" />
-        </div>
-        <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
-          90-Day Module Grid
-        </h3>
-        <p className="text-sm text-white/40 max-w-md mx-auto mb-6">
-          The complete roadmap grid is being built. Each day unlocks the next — 
-          with videos, quizzes, assignments, and credit rewards.
-        </p>
+  const phaseModules = [modules.filter((m) => m.phase === 1), modules.filter((m) => m.phase === 2), modules.filter((m) => m.phase === 3)]
+  const phaseMeta = [
+    { name: 'Hustler', days: 'Days 1–30', icon: Rocket, color: 'cyan' },
+    { name: 'Automation Agency', days: 'Days 31–60', icon: Zap, color: 'purple' },
+    { name: 'Enterprise', days: 'Days 61–90', icon: BarChart3, color: 'amber' },
+  ]
 
-        {/* Preview Grid */}
-        <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5 sm:gap-2 max-w-xl mx-auto">
-          {days.slice(0, 30).map((day) => (
-            <motion.div
-              key={day}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: day * 0.01 }}
-              className={`aspect-square rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-medium transition-all duration-300 ${
-                day === 1
-                  ? 'bg-gradient-to-br from-nitai-cyan/30 to-nitai-cyan/10 text-nitai-cyan border border-nitai-cyan/20'
-                  : 'bg-white/[0.03] text-white/20 border border-white/5'
-              }`}
-            >
-              {day === 1 ? (
-                <Sparkles className="w-3 h-3" />
-              ) : (
-                <Lock className="w-3 h-3" />
-              )}
-            </motion.div>
-          ))}
-        </div>
-        <p className="mt-4 text-xs text-white/20">
-          Showing preview (1-30) &middot; {90 - 30} more days locked
-        </p>
-      </motion.div>
+  return (
+    <div className="space-y-8">
+      {phaseModules.map((phaseMods, phaseIdx) => {
+        const meta = phaseMeta[phaseIdx]
+        const Icon = meta.icon
+        return (
+          <motion.div
+            key={meta.name}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: phaseIdx * 0.1 }}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-${meta.color}-500/20 border border-${meta.color}-500/20`}>
+                <Icon className={`w-4 h-4 sm:w-5 sm:h-5 text-${meta.color}-400`} />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-bold text-white">{meta.name}</h3>
+                <p className="text-xs text-white/30">{meta.days}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5 sm:gap-2">
+              {phaseMods.map((mod) => {
+                const isUnlocked = mod.dayNumber === 1
+                return (
+                  <Link
+                    key={mod.dayNumber}
+                    to={isUnlocked ? `/dashboard/student/module/${mod.dayNumber}` : '#'}
+                    onClick={(e) => {
+                      if (!isUnlocked) e.preventDefault()
+                    }}
+                    className={`group relative aspect-[3/4] rounded-lg sm:rounded-xl border overflow-hidden transition-all duration-300 ${
+                      isUnlocked
+                        ? `border-${meta.color}-500/30 bg-gradient-to-b from-${meta.color}-500/10 to-${meta.color}-500/5 hover:scale-105 hover:shadow-lg hover:shadow-${meta.color}-500/20`
+                        : 'border-white/5 bg-white/[0.02] cursor-not-allowed'
+                    }`}
+                  >
+                    {isUnlocked && (
+                      <div className={`absolute inset-0 bg-gradient-to-b from-${meta.color}-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                    )}
+                    <div className="relative h-full flex flex-col items-center justify-center p-1 sm:p-2">
+                      <span className={`text-xs sm:text-sm font-bold leading-none ${isUnlocked ? 'text-white' : 'text-white/20'}`}>
+                        {mod.dayNumber}
+                      </span>
+                      <div className="mt-1 sm:mt-1.5 w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
+                        {isUnlocked ? (
+                          <Play className={`w-3 h-3 sm:w-3.5 sm:h-3.5 text-${meta.color}-400`} />
+                        ) : (
+                          <LockKeyhole className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white/20" />
+                        )}
+                      </div>
+                      <span className={`mt-1 text-[7px] sm:text-[9px] font-medium leading-tight text-center line-clamp-2 ${isUnlocked ? 'text-white/70' : 'text-white/20'}`}>
+                        {mod.title}
+                      </span>
+                      {isUnlocked && (
+                        <div className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5">
+                          <Star className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-cyan-400 fill-cyan-400" />
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </motion.div>
+        )
+      })}
     </div>
   )
 }
