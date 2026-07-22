@@ -26,6 +26,15 @@ export const handler: NetlifyHandler = async (event) => {
       return errorResponse('Password must be at least 8 characters', 400, origin)
     }
 
+    const missing: string[] = []
+    if (!/[A-Z]/.test(password)) missing.push('an uppercase letter')
+    if (!/[a-z]/.test(password)) missing.push('a lowercase letter')
+    if (!/[0-9]/.test(password)) missing.push('a number')
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(password)) missing.push('a special character')
+    if (missing.length > 0) {
+      return errorResponse(`Password must include ${missing.join(', ')}`, 400, origin)
+    }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       return errorResponse('Invalid email format', 400, origin)

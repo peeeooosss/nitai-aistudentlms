@@ -99,6 +99,7 @@ export default function SignIn() {
                     required
                   />
                 </div>
+                <p className="mt-1.5 text-xs text-white/20">Use the email you registered with</p>
               </div>
 
               <div>

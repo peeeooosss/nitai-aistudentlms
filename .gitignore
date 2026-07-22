@@ -35,3 +35,4 @@ dist-ssr
 
 # Prisma
 netlify/functions/node_modules
+deno.lock

@@ -3,15 +3,48 @@
   publish = "dist"
   functions = "netlify/functions"
 
+[dev]
+  command = "npm run dev"
+  targetPort = 5179
+  port = 8888
+
 [build.environment]
   NODE_VERSION = "20"
   PRISMA_CLI_QUERY_ENGINE_TYPE = "library"
 
+# Auth endpoints: frontend calls /api/auth/register but function is auth-register
+[[redirects]]
+  from = "/api/auth/google/callback"
+  to = "/.netlify/functions/auth-google-callback"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/google"
+  to = "/.netlify/functions/auth-google"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/register"
+  to = "/.netlify/functions/auth-register"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/login"
+  to = "/.netlify/functions/auth-login"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/me"
+  to = "/.netlify/functions/auth-me"
+  status = 200
+
+# Other API endpoints (progress, quizzes, assignments, etc.)
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
 
+# SPA fallback (must be LAST)
 [[redirects]]
   from = "/*"
   to = "/index.html"

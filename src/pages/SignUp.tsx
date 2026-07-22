@@ -1,9 +1,47 @@
-import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { NitaiLogoFull } from '../components/NitaiLogo'
-import { ArrowLeft, Mail, Lock, User, Eye, EyeOff, ArrowRight, Sparkles, Globe, Check } from 'lucide-react'
+import { ArrowLeft, Mail, Lock, User, Eye, EyeOff, ArrowRight, Sparkles, Globe, Check, X, ShieldCheck } from 'lucide-react'
+
+interface PasswordRule {
+  label: string
+  test: (p: string) => boolean
+}
+
+const passwordRules: PasswordRule[] = [
+  { label: 'At least 8 characters', test: (p) => p.length >= 8 },
+  { label: 'One uppercase letter (A-Z)', test: (p) => /[A-Z]/.test(p) },
+  { label: 'One lowercase letter (a-z)', test: (p) => /[a-z]/.test(p) },
+  { label: 'One number (0-9)', test: (p) => /[0-9]/.test(p) },
+  { label: 'One special character (!@#$%^&*)', test: (p) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(p) },
+]
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function PasswordStrengthBar({ score }: { score: number }) {
+  const color = score <= 1 ? 'bg-red-500' : score <= 3 ? 'bg-yellow-500' : 'bg-emerald-500'
+  const label = score <= 1 ? 'Weak' : score <= 3 ? 'Medium' : 'Strong'
+  const labelColor = score <= 1 ? 'text-red-400' : score <= 3 ? 'text-yellow-400' : 'text-emerald-400'
+
+  return (
+    <div className="mt-2.5">
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-xs text-white/30">Password strength</span>
+        <span className={`text-xs font-medium ${labelColor}`}>{label}</span>
+      </div>
+      <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${(score / passwordRules.length) * 100}%` }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className={`h-full rounded-full ${color}`}
+        />
+      </div>
+    </div>
+  )
+}
 
 export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false)
@@ -13,12 +51,19 @@ export default function SignUp() {
   const [isLoading, setIsLoading] = useState(false)
   const [accepted, setAccepted] = useState(false)
   const [error, setError] = useState('')
+  const [emailFocused, setEmailFocused] = useState(false)
+  const [passwordFocused, setPasswordFocused] = useState(false)
   const navigate = useNavigate()
   const { register, loginWithGoogle } = useAuth()
 
+  const emailValid = useMemo(() => emailRegex.test(email), [email])
+  const passwordResults = useMemo(() => passwordRules.map((r) => ({ ...r, passed: r.test(password) })), [password])
+  const passwordScore = useMemo(() => passwordResults.filter((r) => r.passed).length, [passwordResults])
+  const allPasswordValid = passwordScore === passwordRules.length
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name || !email || !password || !accepted) return
+    if (!name || !email || !password || !accepted || !allPasswordValid) return
     setIsLoading(true)
     setError('')
     try {
@@ -114,11 +159,37 @@ export default function SignUp() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    onFocus={() => setEmailFocused(true)}
+                    onBlur={() => setEmailFocused(false)}
                     placeholder="you@example.com"
                     className="w-full pl-11 pr-4 py-3.5 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-white/20 outline-none focus:border-nitai-cyan/50 focus:bg-white/[0.05] transition-all duration-300"
                     required
                   />
+                  {emailFocused && email.length > 0 && (
+                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
+                      {emailValid ? (
+                        <Check className="w-4 h-4 text-emerald-400" />
+                      ) : (
+                        <X className="w-4 h-4 text-red-400" />
+                      )}
+                    </div>
+                  )}
                 </div>
+                <AnimatePresence>
+                  {emailFocused && email.length > 0 && (
+                    <motion.p
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className={`mt-1.5 text-xs ${emailValid ? 'text-emerald-400/70' : 'text-red-400/70'}`}
+                    >
+                      {emailValid ? 'Valid email format' : 'Please enter a valid email (e.g. you@example.com)'}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+                {!emailFocused && (
+                  <p className="mt-1.5 text-xs text-white/20">We'll never share your email</p>
+                )}
               </div>
 
               <div>
@@ -132,6 +203,7 @@ export default function SignUp() {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onFocus={() => setPasswordFocused(true)}
                     placeholder="Create a strong password"
                     className="w-full pl-11 pr-11 py-3.5 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-white/20 outline-none focus:border-nitai-cyan/50 focus:bg-white/[0.05] transition-all duration-300"
                     required
@@ -145,7 +217,61 @@ export default function SignUp() {
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
-                <p className="mt-1.5 text-xs text-white/20">Minimum 8 characters</p>
+
+                {password.length > 0 && <PasswordStrengthBar score={passwordScore} />}
+
+                <AnimatePresence>
+                  {passwordFocused && password.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="mt-3 space-y-1.5 overflow-hidden"
+                    >
+                      {passwordResults.map((rule, i) => (
+                        <motion.div
+                          key={rule.label}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                          className="flex items-center gap-2"
+                        >
+                          {rule.passed ? (
+                            <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                              <Check className="w-2.5 h-2.5 text-emerald-400" />
+                            </div>
+                          ) : (
+                            <div className="w-4 h-4 rounded-full bg-white/5 flex items-center justify-center flex-shrink-0">
+                              <X className="w-2.5 h-2.5 text-white/20" />
+                            </div>
+                          )}
+                          <span className={`text-xs transition-colors duration-200 ${rule.passed ? 'text-emerald-400/80' : 'text-white/30'}`}>
+                            {rule.label}
+                          </span>
+                        </motion.div>
+                      ))}
+                      <div className="flex items-center gap-2 pt-1">
+                        {allPasswordValid ? (
+                          <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                            <ShieldCheck className="w-2.5 h-2.5 text-emerald-400" />
+                          </div>
+                        ) : (
+                          <div className="w-4 h-4 rounded-full bg-white/5 flex items-center justify-center flex-shrink-0">
+                            <X className="w-2.5 h-2.5 text-white/20" />
+                          </div>
+                        )}
+                        <span className={`text-xs font-medium transition-colors duration-200 ${allPasswordValid ? 'text-emerald-400/80' : 'text-white/30'}`}>
+                          {allPasswordValid ? 'Password is strong' : 'Password must meet all requirements'}
+                        </span>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {passwordFocused && password.length === 0 && (
+                  <p className="mt-2 text-xs text-white/20">Use 8+ characters with uppercase, lowercase, numbers & symbols</p>
+                )}
               </div>
 
               <label className="flex items-start gap-3 cursor-pointer group">
@@ -174,7 +300,7 @@ export default function SignUp() {
 
               <button
                 type="submit"
-                disabled={isLoading || !accepted}
+                disabled={isLoading || !accepted || !allPasswordValid}
                 className="group relative w-full py-3.5 rounded-xl font-semibold text-white overflow-hidden transition-all duration-300 disabled:opacity-60"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-nitai-accent via-nitai-pink to-nitai-accent bg-[length:200%_100%] animate-shimmer" />
