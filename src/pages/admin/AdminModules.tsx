@@ -1,52 +1,87 @@
 import { motion } from 'framer-motion'
-import { useState } from 'react'
-import { modules, getPhaseGradient, type Module } from '../../data/modules'
+import { useState, useEffect } from 'react'
+import { modules as defaultModules, getPhaseGradient } from '../../data/modules'
+import { api } from '../../services/api'
 import { Search, Edit3, Save, X } from 'lucide-react'
 
-const getModuleData = (mod: Module) => {
-  const key = `nitai_module_${mod.id}`
-  try {
-    const stored = JSON.parse(localStorage.getItem(key) || '{}')
-    return stored as Partial<{ title: string; videoUrl: string; creditsReward: number }>
-  } catch {
-    return {}
-  }
-}
-
-const getDisplayUrl = (mod: Module): string => {
-  const saved = getModuleData(mod)
-  return saved.videoUrl || mod.videoUrl || `https://youtube.com/watch?v=module-${mod.dayNumber}`
+interface DbModule {
+  id: number
+  dayNumber: number
+  title: string
+  phase: number
+  phaseName: string
+  description: string
+  creditsReward: number
+  videoUrl: string | null
 }
 
 export default function AdminModules() {
+  const [dbModules, setDbModules] = useState<DbModule[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [editId, setEditId] = useState<number | null>(null)
   const [editData, setEditData] = useState({ title: '', videoUrl: '', creditsReward: 0 })
   const [phaseFilter, setPhaseFilter] = useState<number | null>(null)
-  const [refreshKey, setRefreshKey] = useState(0)
+  const [saving, setSaving] = useState(false)
 
-  const filtered = modules.filter((m) => {
+  useEffect(() => {
+    fetchModules()
+  }, [])
+
+  const fetchModules = async () => {
+    try {
+      const data = await api.get<{ modules: DbModule[] }>('/admin/modules')
+      setDbModules(data.modules)
+    } catch {
+      setDbModules(defaultModules as DbModule[])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const allModules = dbModules.length > 0 ? dbModules : defaultModules as DbModule[]
+
+  const filtered = allModules.filter((m) => {
     const matchesSearch = m.title.toLowerCase().includes(search.toLowerCase())
     const matchesPhase = phaseFilter === null || m.phase === phaseFilter
     return matchesSearch && matchesPhase
   })
 
-  const startEdit = (mod: Module) => {
+  const startEdit = (mod: DbModule) => {
     setEditId(mod.id)
-    const saved = getModuleData(mod)
     setEditData({
-      title: saved.title || mod.title,
-      videoUrl: saved.videoUrl || mod.videoUrl || '',
-      creditsReward: saved.creditsReward ?? mod.creditsReward,
+      title: mod.title,
+      videoUrl: mod.videoUrl || '',
+      creditsReward: mod.creditsReward,
     })
   }
 
-  const saveEdit = () => {
-    if (editId !== null) {
-      localStorage.setItem(`nitai_module_${editId}`, JSON.stringify(editData))
-      setRefreshKey((k) => k + 1)
+  const saveEdit = async () => {
+    if (editId === null) return
+    setSaving(true)
+    try {
+      await api.put(`/admin/modules/${editId}`, editData)
+      setDbModules(prev => prev.map(m =>
+        m.id === editId
+          ? { ...m, title: editData.title, videoUrl: editData.videoUrl || null, creditsReward: editData.creditsReward }
+          : m
+      ))
+    } catch (err) {
+      console.error('Failed to save module:', err)
+    } finally {
+      setSaving(false)
+      setEditId(null)
     }
-    setEditId(null)
+  }
+
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8">
+        <div className="flex items-center justify-center py-20">
+          <div className="w-12 h-12 border-4 border-nitai-cyan/30 border-t-nitai-cyan rounded-full animate-spin" />
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -58,7 +93,7 @@ export default function AdminModules() {
             <p className="text-white/40 text-sm mt-1">Video Uploads & 90-Day Block Builder</p>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-nitai-accent/10 text-nitai-accent-light text-xs border border-nitai-accent/20">
-            {modules.length} blocks
+            {allModules.length} blocks
           </div>
         </div>
 
@@ -104,7 +139,7 @@ export default function AdminModules() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {filtered.map((mod) => (
-                  <tr key={`${mod.id}-${refreshKey}`} className="hover:bg-white/[0.02] transition-colors group">
+                  <tr key={mod.id} className="hover:bg-white/[0.02] transition-colors group">
                     <td className="px-4 py-3">
                       <span className="text-sm font-bold text-white">{mod.dayNumber}</span>
                     </td>
@@ -133,7 +168,7 @@ export default function AdminModules() {
                         />
                       ) : (
                         <span className="text-xs text-white/30 font-mono truncate block max-w-[200px]">
-                          {getDisplayUrl(mod)}
+                          {mod.videoUrl || `https://youtube.com/watch?v=module-${mod.dayNumber}`}
                         </span>
                       )}
                     </td>
@@ -152,8 +187,8 @@ export default function AdminModules() {
                     <td className="px-4 py-3 text-right">
                       {editId === mod.id ? (
                         <div className="flex items-center justify-end gap-1">
-                          <button onClick={saveEdit} className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors">
-                            <Save className="w-4 h-4" />
+                          <button onClick={saveEdit} disabled={saving} className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors disabled:opacity-50">
+                            {saving ? <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg> : <Save className="w-4 h-4" />}
                           </button>
                           <button onClick={() => setEditId(null)} className="p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors">
                             <X className="w-4 h-4" />

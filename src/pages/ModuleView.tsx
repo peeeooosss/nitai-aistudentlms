@@ -2,7 +2,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useParams, Link } from 'react-router-dom'
 import { useState, useRef, useEffect } from 'react'
 import { NitaiLogo } from '../components/NitaiLogo'
-import { getModuleByDay, getPhaseGradient, modules, type Module } from '../data/modules'
+import { getModuleByDay, getPhaseGradient, modules } from '../data/modules'
+import { api } from '../services/api'
 import {
   ArrowLeft,
   Play,
@@ -28,16 +29,6 @@ import {
 } from 'lucide-react'
 
 type Tab = 'video' | 'quiz' | 'assignment' | 'doubt'
-
-const getEffectiveVideoUrl = (mod: Module): string | undefined => {
-  const key = `nitai_module_${mod.id}`
-  try {
-    const saved = JSON.parse(localStorage.getItem(key) || '{}')
-    return saved.videoUrl || mod.videoUrl
-  } catch {
-    return mod.videoUrl
-  }
-}
 
 const quizData = {
   questions: [
@@ -146,22 +137,32 @@ export default function ModuleView() {
   const chatEndRef = useRef<HTMLDivElement>(null)
   const [msgIdCounter, setMsgIdCounter] = useState(2)
 
-  const [completedDays, setCompletedDays] = useState<number[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('nitai_completed_modules') || '[]')
-    } catch {
-      return []
-    }
-  })
+  const [completedDays, setCompletedDays] = useState<number[]>([])
   const [completionToast, setCompletionToast] = useState(false)
 
-  const handleVideoComplete = (dayNumber: number) => {
+  useEffect(() => {
+    const fetchProgress = async () => {
+      try {
+        const data = await api.get<{ completedModules: number[] }>('/progress')
+        setCompletedDays(data.completedModules || [])
+      } catch (err) {
+        console.error('Failed to fetch progress:', err)
+      }
+    }
+    fetchProgress()
+  }, [])
+
+  const handleVideoComplete = async (dayNumber: number) => {
     if (completedDays.includes(dayNumber)) return
-    const updated = [...completedDays, dayNumber].sort((a, b) => a - b)
-    setCompletedDays(updated)
-    localStorage.setItem('nitai_completed_modules', JSON.stringify(updated))
-    setCompletionToast(true)
-    setTimeout(() => setCompletionToast(false), 5000)
+    try {
+      await api.post('/progress', { moduleId: getModuleByDay(dayNumber)?.id })
+      const updated = [...completedDays, dayNumber].sort((a, b) => a - b)
+      setCompletedDays(updated)
+      setCompletionToast(true)
+      setTimeout(() => setCompletionToast(false), 5000)
+    } catch (err) {
+      console.error('Failed to complete module:', err)
+    }
   }
 
   const checkUnlocked = (dayNum: number) => {
@@ -212,17 +213,34 @@ export default function ModuleView() {
     { id: 'doubt', label: 'Doubt Clearing', icon: MessageCircle },
   ]
 
-  const handleQuizSubmit = () => {
-    let score = 0
-    quizData.questions.forEach((q) => {
-      if (quizAnswers[q.id] === q.correct) score++
-    })
-    setQuizScore(score)
-    setQuizSubmitted(true)
+  const handleQuizSubmit = async () => {
+    try {
+      const answersArray = quizData.questions.map((q) => quizAnswers[q.id] ?? -1)
+      const data = await api.post<{ submission: { score: number; passed: boolean } }>('/quizzes', {
+        quizId: 'current',
+        answers: answersArray,
+      })
+      setQuizScore(data.submission.score)
+      setQuizSubmitted(true)
+    } catch (err) {
+      console.error('Failed to submit quiz:', err)
+      let score = 0
+      quizData.questions.forEach((q) => {
+        if (quizAnswers[q.id] === q.correct) score++
+      })
+      setQuizScore(score)
+      setQuizSubmitted(true)
+    }
   }
 
-  const handleAssignmentSubmit = () => {
-    setAssignmentSubmitted(true)
+  const handleAssignmentSubmit = async () => {
+    try {
+      await api.post('/assignments', { moduleId: mod?.id, content: assignmentText })
+      setAssignmentSubmitted(true)
+    } catch (err) {
+      console.error('Failed to submit assignment:', err)
+      setAssignmentSubmitted(true)
+    }
   }
 
   const handleChatSend = () => {
@@ -474,7 +492,7 @@ export default function ModuleView() {
             >
               {activeTab === 'video' && (
                 <VideoTab
-                  videoUrl={getEffectiveVideoUrl(mod)}
+                  videoUrl={mod.videoUrl}
                   dayNumber={day}
                   nextDay={nextDay || undefined}
                   onComplete={handleVideoComplete}

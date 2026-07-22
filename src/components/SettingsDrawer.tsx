@@ -1,5 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext'
+import { api } from '../services/api'
 import {
   X,
   User,
@@ -9,7 +11,6 @@ import {
   Bell,
   Globe,
   Lock,
-  Trash2,
   Save,
   ChevronDown,
   Check,
@@ -24,18 +25,32 @@ export function SettingsDrawer({
   isOpen: boolean
   onClose: () => void
 }) {
-  const [name, setName] = useState(() => localStorage.getItem('nitai_user_name') || 'Learner')
-  const [email, setEmail] = useState(() => localStorage.getItem('nitai_user_email') || 'learner@nitai.com')
-  const [bio, setBio] = useState('AI enthusiast on a 90-day journey to financial freedom.')
+  const { user, refreshUser } = useAuth()
+  const [name, setName] = useState(user?.name || 'Learner')
+  const [bio, setBio] = useState('')
   const [darkMode, setDarkMode] = useState(true)
   const [emailNotifs, setEmailNotifs] = useState(true)
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
 
-  const handleSave = () => {
-    localStorage.setItem('nitai_user_name', name)
-    localStorage.setItem('nitai_user_email', email)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+  useEffect(() => {
+    if (user) {
+      setName(user.name)
+    }
+  }, [user])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await api.put('/settings/profile', { name, bio, emailNotifications: emailNotifs })
+      await refreshUser()
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (err) {
+      console.error('Failed to save settings:', err)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -72,7 +87,6 @@ export function SettingsDrawer({
               </div>
 
               <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
-                {/* Profile Section */}
                 <section>
                   <div className="flex items-center gap-2 mb-4">
                     <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-nitai-accent/20 to-nitai-cyan/20 border border-white/10">
@@ -97,9 +111,9 @@ export function SettingsDrawer({
                       <div className="relative">
                         <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                         <input
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white text-sm placeholder-white/20 outline-none focus:border-nitai-cyan/50 transition-all"
+                          value={user?.email || ''}
+                          disabled
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white/40 text-sm outline-none cursor-not-allowed"
                         />
                       </div>
                     </div>
@@ -110,6 +124,7 @@ export function SettingsDrawer({
                         <textarea
                           value={bio}
                           onChange={(e) => setBio(e.target.value)}
+                          placeholder="Tell us about yourself..."
                           rows={3}
                           className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white text-sm placeholder-white/20 outline-none focus:border-nitai-cyan/50 transition-all resize-none"
                         />
@@ -118,7 +133,6 @@ export function SettingsDrawer({
                   </div>
                 </section>
 
-                {/* Preferences Section */}
                 <section>
                   <div className="flex items-center gap-2 mb-4">
                     <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400/20 to-nitai-pink/20 border border-white/10">
@@ -184,7 +198,6 @@ export function SettingsDrawer({
                   </div>
                 </section>
 
-                {/* Account Section */}
                 <section>
                   <div className="flex items-center gap-2 mb-4">
                     <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-red-400/20 to-rose-500/20 border border-white/10">
@@ -193,24 +206,31 @@ export function SettingsDrawer({
                     <h3 className="text-sm font-semibold text-white">Account</h3>
                   </div>
                   <div className="space-y-3">
-                    <button className="w-full text-left py-2.5 px-4 rounded-xl bg-white/[0.02] border border-white/5 text-sm text-white/60 hover:text-white hover:bg-white/[0.04] transition-all">
-                      Update Password
-                    </button>
-                    <div className="border-t border-white/5 pt-3">
-                      <button className="flex items-center gap-2 w-full py-2.5 px-4 rounded-xl bg-red-500/5 border border-red-500/10 text-sm text-red-400 hover:bg-red-500/10 transition-all">
-                        <Trash2 className="w-4 h-4" />
-                        Delete Account
-                      </button>
+                    <div className="py-2.5 px-4 rounded-xl bg-white/[0.02] border border-white/5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-white/60">Account Type</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-nitai-cyan/10 text-nitai-cyan border border-nitai-cyan/20">
+                          {user?.role || 'STUDENT'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="py-2.5 px-4 rounded-xl bg-white/[0.02] border border-white/5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-white/60">Member Since</span>
+                        <span className="text-xs text-white/40">
+                          {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </section>
               </div>
 
-              {/* Save Button */}
               <div className="border-t border-white/5 px-6 py-5">
                 <button
                   onClick={handleSave}
-                  className="relative w-full py-3 rounded-xl font-semibold text-white overflow-hidden transition-all duration-300"
+                  disabled={saving}
+                  className="relative w-full py-3 rounded-xl font-semibold text-white overflow-hidden transition-all duration-300 disabled:opacity-60"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-nitai-accent to-nitai-cyan" />
                   <div className="absolute inset-[1px] rounded-[13px] bg-nitai-dark transition-all duration-300" />
@@ -220,6 +240,11 @@ export function SettingsDrawer({
                         <Check className="w-4 h-4 text-emerald-400" />
                         <span className="text-emerald-400">Saved!</span>
                       </>
+                    ) : saving ? (
+                      <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
                     ) : (
                       <>
                         <Save className="w-4 h-4" />

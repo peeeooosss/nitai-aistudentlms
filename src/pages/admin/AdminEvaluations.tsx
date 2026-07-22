@@ -1,13 +1,18 @@
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, Trash2, CheckCircle, Clock, XCircle } from 'lucide-react'
+import { api } from '../../services/api'
 
-const submissions = [
-  { id: 1, user: 'alex@example.com', module: 'Day 1: Welcome to Nitai', status: 'PENDING' as const, submittedAt: '2 hours ago' },
-  { id: 2, user: 'sarah@example.com', module: 'Day 1: Welcome to Nitai', status: 'APPROVED' as const, submittedAt: '5 hours ago' },
-  { id: 3, user: 'mike@example.com', module: 'Day 2: What is AI?', status: 'REJECTED' as const, submittedAt: '1 day ago' },
-  { id: 4, user: 'emma@example.com', module: 'Day 1: Welcome to Nitai', status: 'PENDING' as const, submittedAt: '1 day ago' },
-]
+interface Submission {
+  id: string
+  userName: string
+  userEmail: string
+  moduleTitle: string
+  dayNumber: number
+  content: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  submittedAt: string
+}
 
 type Question = { id: number; question: string; options: string[]; correct: number }
 
@@ -15,6 +20,26 @@ export default function AdminEvaluations() {
   const [activeTab, setActiveTab] = useState<'quizzes' | 'submissions'>('quizzes')
   const [questions, setQuestions] = useState<Question[]>([])
   const [newQ, setNewQ] = useState({ question: '', options: ['', '', '', ''], correct: 0 })
+  const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchSubmissions = async () => {
+      try {
+        const data = await api.get<{ submissions: Submission[] }>('/admin/submissions')
+        setSubmissions(data.submissions || [])
+      } catch (err) {
+        console.error('Failed to fetch submissions:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (activeTab === 'submissions') {
+      fetchSubmissions()
+    } else {
+      setLoading(false)
+    }
+  }, [activeTab])
 
   const addQuestion = () => {
     if (!newQ.question.trim() || newQ.options.some((o) => !o.trim())) return
@@ -24,6 +49,15 @@ export default function AdminEvaluations() {
 
   const deleteQuestion = (id: number) => {
     setQuestions(questions.filter((q) => q.id !== id))
+  }
+
+  const handleStatusChange = async (submissionId: string, newStatus: 'APPROVED' | 'REJECTED') => {
+    try {
+      await api.put(`/admin/submissions/${submissionId}`, { status: newStatus })
+      setSubmissions(prev => prev.map(s => s.id === submissionId ? { ...s, status: newStatus } : s))
+    } catch (err) {
+      console.error('Failed to update submission:', err)
+    }
   }
 
   const statusIcon = (status: string) => {
@@ -157,47 +191,76 @@ export default function AdminEvaluations() {
           </div>
         ) : (
           <div className="glass rounded-2xl border border-white/5 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-white/5">
-                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white/30">User</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white/30">Module</th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white/30">Status</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white/30">Submitted</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white/30">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {submissions.map((sub) => (
-                    <tr key={sub.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-4 py-3">
-                        <span className="text-sm text-white/70">{sub.user}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="text-sm text-white/50">{sub.module}</span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium ${
-                          sub.status === 'APPROVED' ? 'bg-emerald-500/10 text-emerald-400' :
-                          sub.status === 'REJECTED' ? 'bg-red-500/10 text-red-400' :
-                          'bg-amber-500/10 text-amber-400'
-                        }`}>
-                          {statusIcon(sub.status)}
-                          {sub.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right text-sm text-white/30">{sub.submittedAt}</td>
-                      <td className="px-4 py-3 text-right">
-                        <button className="text-xs px-3 py-1.5 rounded-lg bg-white/[0.03] text-white/40 hover:text-white border border-white/10 transition-colors">
-                          View
-                        </button>
-                      </td>
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-8 h-8 border-4 border-nitai-cyan/30 border-t-nitai-cyan rounded-full animate-spin" />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-white/5">
+                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white/30">User</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white/30">Module</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white/30">Status</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white/30">Submitted</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white/30">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {submissions.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-12 text-center text-white/30 text-sm">
+                          No submissions yet
+                        </td>
+                      </tr>
+                    ) : (
+                      submissions.map((sub) => (
+                        <tr key={sub.id} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="px-4 py-3">
+                            <span className="text-sm text-white/70">{sub.userName}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-sm text-white/50">{sub.moduleTitle}</span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium ${
+                              sub.status === 'APPROVED' ? 'bg-emerald-500/10 text-emerald-400' :
+                              sub.status === 'REJECTED' ? 'bg-red-500/10 text-red-400' :
+                              'bg-amber-500/10 text-amber-400'
+                            }`}>
+                              {statusIcon(sub.status)}
+                              {sub.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm text-white/30">
+                            {new Date(sub.submittedAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            {sub.status === 'PENDING' && (
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  onClick={() => handleStatusChange(sub.id, 'APPROVED')}
+                                  className="text-xs px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleStatusChange(sub.id, 'REJECTED')}
+                                  className="text-xs px-2 py-1 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </motion.div>

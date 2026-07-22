@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext'
+import { api } from '../services/api'
 import { NitaiLogo } from '../components/NitaiLogo'
 import { NotificationDropdown } from '../components/NotificationDropdown'
 import { SettingsDrawer } from '../components/SettingsDrawer'
@@ -20,8 +22,14 @@ import {
 
 export default function Dashboard() {
   const navigate = useNavigate()
+  const { logout } = useAuth()
   const [showNotifications, setShowNotifications] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+
+  const handleLogout = () => {
+    logout()
+    navigate('/')
+  }
 
   return (
     <div className="min-h-screen bg-nitai-dark text-white">
@@ -68,7 +76,7 @@ export default function Dashboard() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => navigate('/')}
+                onClick={handleLogout}
                 className="p-2 rounded-xl text-white/40 hover:text-white bg-white/[0.03] hover:bg-white/[0.06] transition-all duration-300"
               >
                 <LogOut className="w-5 h-5" />
@@ -88,20 +96,42 @@ export default function Dashboard() {
 }
 
 function DashboardContent() {
-  const completedModules: number[] = (() => {
-    try {
-      return JSON.parse(localStorage.getItem('nitai_completed_modules') || '[]')
-    } catch { return [] }
-  })()
+  const { user } = useAuth()
+  const [completedModules, setCompletedModules] = useState<number[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchProgress = async () => {
+      try {
+        const data = await api.get<{ completedModules: number[] }>('/progress')
+        setCompletedModules(data.completedModules || [])
+      } catch (err) {
+        console.error('Failed to fetch progress:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchProgress()
+  }, [])
+
   const nextDay = completedModules.length > 0 ? Math.max(...completedModules) + 1 : 1
   const hasStarted = completedModules.length > 0
+  const credits = user?.credits || 0
 
   const stats = [
-    { icon: Coins, label: 'Nitai Credits', value: '0', color: 'from-amber-400 to-orange-500' },
+    { icon: Coins, label: 'Nitai Credits', value: credits.toLocaleString(), color: 'from-amber-400 to-orange-500' },
     { icon: Flame, label: 'Day Streak', value: hasStarted ? '1' : '0', color: 'from-red-400 to-pink-500' },
-    { icon: Clock, label: 'Total Hours', value: hasStarted ? `${completedModules.length * 0.5}` : '0', color: 'from-cyan-400 to-blue-500' },
+    { icon: Clock, label: 'Total Hours', value: hasStarted ? `${(completedModules.length * 0.5).toFixed(1)}` : '0', color: 'from-cyan-400 to-blue-500' },
     { icon: Trophy, label: 'Modules Done', value: `${completedModules.length} / 90`, color: 'from-purple-400 to-pink-500' },
   ] as const
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-12 h-12 border-4 border-nitai-cyan/30 border-t-nitai-cyan rounded-full animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 sm:space-y-8">

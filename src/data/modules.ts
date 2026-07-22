@@ -143,15 +143,6 @@ export function getModuleByDay(dayNumber: number): Module | undefined {
   return modules.find((m) => m.dayNumber === dayNumber)
 }
 
-export function getPhaseColor(phase: number): string {
-  switch (phase) {
-    case 1: return 'cyan'
-    case 2: return 'purple'
-    case 3: return 'amber'
-    default: return 'cyan'
-  }
-}
-
 export function getPhaseGradient(phase: number): string {
   switch (phase) {
     case 1: return 'from-cyan-400 to-blue-500'
