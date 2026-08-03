@@ -26,7 +26,40 @@ import {
   MessageCircle,
   Bot,
   User,
+  ExternalLink,
 } from 'lucide-react'
+
+function isGoogleDriveUrl(url: string): boolean {
+  return url.includes('drive.google.com/file/d/')
+}
+
+function getGoogleDriveEmbedUrl(url: string): string {
+  const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)
+  if (match) {
+    return `https://drive.google.com/file/d/${match[1]}/preview`
+  }
+  return url
+}
+
+function isYouTubeUrl(url: string): boolean {
+  return url.includes('youtube.com') || url.includes('youtu.be')
+}
+
+function getYouTubeEmbedUrl(url: string): string {
+  let videoId = ''
+  if (url.includes('youtube.com/embed/')) {
+    return url
+  }
+  if (url.includes('youtube.com/watch?v=')) {
+    videoId = url.split('v=')[1]?.split('&')[0] || ''
+  } else if (url.includes('youtu.be/')) {
+    videoId = url.split('youtu.be/')[1]?.split('?')[0] || ''
+  }
+  if (videoId) {
+    return `https://www.youtube.com/embed/${videoId}`
+  }
+  return url
+}
 
 type Tab = 'video' | 'quiz' | 'assignment' | 'doubt'
 
@@ -546,6 +579,7 @@ function VideoTab({
 }) {
   const [videoEnded, setVideoEnded] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
 
   const handleEnded = () => {
     if (videoEnded) return
@@ -553,25 +587,62 @@ function VideoTab({
     onComplete(dayNumber)
   }
 
+  const handleIframeLoad = () => {}
+
   useEffect(() => {
     setVideoEnded(false)
   }, [videoUrl])
+
+  const isGDrive = videoUrl ? isGoogleDriveUrl(videoUrl) : false
+  const isYT = videoUrl ? isYouTubeUrl(videoUrl) : false
+  const embedUrl = videoUrl
+    ? isGDrive
+      ? getGoogleDriveEmbedUrl(videoUrl)
+      : isYT
+      ? getYouTubeEmbedUrl(videoUrl)
+      : videoUrl
+    : ''
 
   return (
     <div className="space-y-6">
       {videoUrl ? (
         <div className="relative aspect-video rounded-2xl overflow-hidden bg-nitai-card border border-white/10">
-          <video
-            ref={videoRef}
-            controls
-            controlsList="nodownload noremoteplayback"
-            disablePictureInPicture
-            className="w-full h-full object-contain bg-black/40"
-            src={videoUrl}
-            onEnded={handleEnded}
-          >
-            Your browser doesn&apos;t support video playback.
-          </video>
+          {isGDrive || isYT ? (
+            <iframe
+              ref={iframeRef}
+              src={embedUrl}
+              title={`Day ${dayNumber} video lesson`}
+              allow="autoplay; fullscreen; encrypted-media"
+              allowFullScreen
+              className="w-full h-full border-0"
+              onLoad={handleIframeLoad}
+            />
+          ) : (
+            <video
+              ref={videoRef}
+              controls
+              controlsList="nodownload noremoteplayback"
+              disablePictureInPicture
+              className="w-full h-full object-contain bg-black/40"
+              src={embedUrl}
+              onEnded={handleEnded}
+            >
+              Your browser doesn&apos;t support video playback.
+            </video>
+          )}
+          {(isGDrive || isYT) && (
+            <div className="absolute bottom-2 right-2">
+              <a
+                href={videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white/80 bg-black/60 backdrop-blur-sm rounded-xl hover:bg-black/80 transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Open in full screen</span>
+              </a>
+            </div>
+          )}
         </div>
       ) : (
         <div className="relative aspect-video rounded-2xl overflow-hidden bg-gradient-to-br from-nitai-card to-nitai-dark border border-white/10 flex items-center justify-center group cursor-pointer">
