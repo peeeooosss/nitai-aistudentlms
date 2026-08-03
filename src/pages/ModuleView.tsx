@@ -172,6 +172,7 @@ export default function ModuleView() {
 
   const [completedDays, setCompletedDays] = useState<number[]>([])
   const [completionToast, setCompletionToast] = useState(false)
+  const [videoEnded, setVideoEnded] = useState(false)
 
   useEffect(() => {
     const fetchProgress = async () => {
@@ -185,7 +186,7 @@ export default function ModuleView() {
     fetchProgress()
   }, [])
 
-  const handleVideoComplete = async (dayNumber: number) => {
+  const markDayComplete = async (dayNumber: number) => {
     if (completedDays.includes(dayNumber)) return
     try {
       await api.post('/progress', { moduleId: getModuleByDay(dayNumber)?.id })
@@ -195,6 +196,18 @@ export default function ModuleView() {
       setTimeout(() => setCompletionToast(false), 5000)
     } catch (err) {
       console.error('Failed to complete module:', err)
+    }
+  }
+
+  const checkDayComplete = () => {
+    if (videoEnded && quizSubmitted && assignmentSubmitted && !completedDays.includes(day)) {
+      markDayComplete(day)
+    }
+  }
+
+  const handleVideoEnded = () => {
+    if (!videoEnded) {
+      setVideoEnded(true)
     }
   }
 
@@ -210,6 +223,7 @@ export default function ModuleView() {
     setQuizScore(0)
     setAssignmentText('')
     setAssignmentSubmitted(false)
+    setVideoEnded(false)
     setChatMessages([
       { id: 1, text: "Hi! I'm AI Didi 🤖 — your personal doubt-clearing assistant. Ask me anything about your course!", isBot: true },
     ])
@@ -222,6 +236,12 @@ export default function ModuleView() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatMessages])
+
+  useEffect(() => {
+    if (videoEnded && quizSubmitted && assignmentSubmitted && !completedDays.includes(day)) {
+      markDayComplete(day)
+    }
+  }, [videoEnded, quizSubmitted, assignmentSubmitted, day])
 
   if (!mod) {
     return (
@@ -498,7 +518,7 @@ export default function ModuleView() {
             </motion.div>
           )}
 
-          <div className="flex gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/5 mb-6 overflow-x-auto">
+          <div className="flex gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/5 mb-4 overflow-x-auto">
             {tabs.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -515,6 +535,33 @@ export default function ModuleView() {
             ))}
           </div>
 
+          <div className="flex items-center gap-4 mb-6 px-2">
+            <div className="flex items-center gap-1.5 text-xs">
+              {videoEnded ? (
+                <CheckCircle className="w-4 h-4 text-emerald-400" />
+              ) : (
+                <div className="w-4 h-4 rounded-full border border-white/20" />
+              )}
+              <span className={videoEnded ? 'text-emerald-400' : 'text-white/40'}>Video</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs">
+              {quizSubmitted ? (
+                <CheckCircle className="w-4 h-4 text-emerald-400" />
+              ) : (
+                <div className="w-4 h-4 rounded-full border border-white/20" />
+              )}
+              <span className={quizSubmitted ? 'text-emerald-400' : 'text-white/40'}>Quiz</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs">
+              {assignmentSubmitted ? (
+                <CheckCircle className="w-4 h-4 text-emerald-400" />
+              ) : (
+                <div className="w-4 h-4 rounded-full border border-white/20" />
+              )}
+              <span className={assignmentSubmitted ? 'text-emerald-400' : 'text-white/40'}>Assignment</span>
+            </div>
+          </div>
+
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
@@ -528,7 +575,7 @@ export default function ModuleView() {
                   videoUrl={mod.videoUrl}
                   dayNumber={day}
                   nextDay={nextDay || undefined}
-                  onComplete={handleVideoComplete}
+                  onComplete={handleVideoEnded}
                 />
               )}
               {activeTab === 'quiz' && (
@@ -671,17 +718,8 @@ function VideoTab({
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-500/20 border border-white/10 mb-3">
             <CheckCircle className="w-8 h-8 text-emerald-400" />
           </div>
-          <h3 className="text-lg font-bold text-white mb-1">Day {dayNumber} Complete! 🎉</h3>
-          <p className="text-sm text-white/40 mb-4">Next day is now unlocked and ready to go.</p>
-          {nextDay && (
-            <Link
-              to={`/dashboard/student/module/${nextDay}`}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold text-sm shadow-lg hover:shadow-emerald-500/30 hover:scale-[1.02] transition-all duration-300"
-            >
-              Go to Day {nextDay}
-              <ChevronRight className="w-4 h-4" />
-            </Link>
-          )}
+          <h3 className="text-lg font-bold text-white mb-1">Video Watched! 🎬</h3>
+          <p className="text-sm text-white/40 mb-2">Complete the quiz and assignment to unlock the next day.</p>
         </motion.div>
       )}
 
