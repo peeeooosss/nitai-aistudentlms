@@ -117,7 +117,7 @@ export const modules: Module[] = [
     phaseName: 'Hustler',
     description: `Master the fundamentals of AI literacy, prompt engineering, and content creation. Day ${i + 1} of your journey to financial freedom.`,
     creditsReward: 25 + (i % 3) * 10,
-    videoUrl: i === 0 ? 'https://drive.google.com/file/d/1zMPXdiptDF6oiM-NlJ4rmmbVUMS40s_-/view?usp=share_link' : undefined,
+    videoUrl: i === 0 ? 'https://drive.google.com/file/d/1zMPXdiptDF6oiM-NlJ4rmmbVUMS40s_-/view?usp=share_link' : i === 1 ? 'https://drive.google.com/file/d/1t_hrdKRtTQXiTlSNAix51QDcJtvvHU3R/view?usp=share_link' : undefined,
   })),
   ...phase2Titles.map((title, i) => ({
     id: 31 + i,

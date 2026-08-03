@@ -13,7 +13,7 @@ function generateModules() {
       phaseName: 'Hustler',
       description: `Day ${i + 1} of your journey. Build the foundation for your AI-powered income stream with hands-on exercises and real-world projects.`,
       creditsReward: 25 + (i % 3) * 10,
-      videoUrl: i === 0 ? 'https://drive.google.com/file/d/1zMPXdiptDF6oiM-NlJ4rmmbVUMS40s_-/view?usp=share_link' : null,
+      videoUrl: i === 0 ? 'https://drive.google.com/file/d/1zMPXdiptDF6oiM-NlJ4rmmbVUMS40s_-/view?usp=share_link' : i === 1 ? 'https://drive.google.com/file/d/1t_hrdKRtTQXiTlSNAix51QDcJtvvHU3R/view?usp=share_link' : null,
     })
   }
 
