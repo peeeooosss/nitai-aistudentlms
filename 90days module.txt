@@ -1,0 +1,129 @@
+NITAI 90-DAY LEARN-TO-EARN LMS
+Complete Module Topics (Days 1-90)
+=====================================
+
+PHASE 1: HUSTLER (Days 1-30) — AI Foundations & Content Creation
+-----------------------------------------------------------------
+
+Day 1: Welcome to Nitai — Your AI Journey Begins
+Day 2: What is AI? Foundations & Core Concepts
+Day 3: Setting Up Your AI Workspace
+Day 4: Introduction to Prompt Engineering
+Day 5: Crafting Effective Prompts
+Day 6: Advanced Prompt Patterns
+Day 7: Prompt Chaining & Sequencing
+Day 8: AI Content Creation Basics
+Day 9: Blog Writing with AI Assistants
+Day 10: Social Media Content Strategy
+Day 11: Email Marketing with AI
+Day 12: AI Image Generation Fundamentals
+Day 13: Midjourney & DALL·E Prompting
+Day 14: Creating Visual Brand Assets
+Day 15: AI Video Script Writing
+Day 16: Voiceovers & AI Audio Production
+Day 17: Editing with AI Tools
+Day 18: AI for Research & Analysis
+Day 19: Data Interpretation with AI
+Day 20: AI Spreadsheet Automation
+Day 21: Building a Personal Brand with AI
+Day 22: AI-Driven Lead Generation
+Day 23: Client Communication with AI
+Day 24: Freelancing with AI Tools
+Day 25: Pricing Your AI Services
+Day 26: Building Your First AI Offer
+Day 27: Portfolio Building with AI
+Day 28: AI Ethics & Responsible Use
+Day 29: First Credit Payout Milestone
+Day 30: Phase 1 Review & Certification
+
+
+PHASE 2: AUTOMATION AGENCY (Days 31-60) — Systems & Client Delivery
+--------------------------------------------------------------------
+
+Day 31: Introduction to AI Automation
+Day 32: Workflow Mapping & Design
+Day 33: No-Code Automation Tools
+Day 34: Building AI Chatbots
+Day 35: Customer Support Automation
+Day 36: Email Automation Sequences
+Day 37: Social Media Scheduling Bots
+Day 38: AI CRM Integration
+Day 39: Lead Scoring with AI
+Day 40: Automated Reporting Systems
+Day 41: AI Agent Architecture
+Day 42: Building Multi-Agent Systems
+Day 43: Agent Memory & Context
+Day 44: Tool-Using AI Agents
+Day 45: Web Research Agents
+Day 46: Data Extraction Pipelines
+Day 47: AI Content Repurposing Systems
+Day 48: Automated SEO Optimization
+Day 49: AI Analytics Dashboards
+Day 50: Client Onboarding Automation
+Day 51: Building Your Agency Stack
+Day 52: Service Packaging for Clients
+Day 53: Client Acquisition Playbook
+Day 54: Proposal Writing with AI
+Day 55: Delivering AI Projects
+Day 56: Scaling Client Deliverables
+Day 57: Team Workflow Automation
+Day 58: Quality Assurance with AI
+Day 59: Revenue Milestone: First $1K
+Day 60: Phase 2 Review & Certification
+
+
+PHASE 3: ENTERPRISE (Days 61-90) — Strategy & Franchise
+--------------------------------------------------------
+
+Day 61: Enterprise AI Strategy
+Day 62: AI Transformation Roadmap
+Day 63: Enterprise Architecture Planning
+Day 64: AI Security & Compliance
+Day 65: Enterprise Data Strategy
+Day 66: Building Internal AI Tools
+Day 67: Enterprise Chatbot Deployment
+Day 68: AI for HR & Talent Management
+Day 69: AI-Powered Financial Analysis
+Day 70: Supply Chain AI Optimization
+Day 71: Enterprise Content Management
+Day 72: AI-Driven Decision Systems
+Day 73: Team Leadership in AI Era
+Day 74: Managing AI Development Teams
+Day 75: AI Project Management
+Day 76: Agile for AI Projects
+Day 77: Stakeholder Communication
+Day 78: ROI Measurement for AI
+Day 79: Revenue Operations with AI
+Day 80: Enterprise Sales Playbook
+Day 81: Partnership Development
+Day 82: Franchise Operating Model
+Day 83: White-Label Platform Strategy
+Day 84: Building Recurring Revenue
+Day 85: Scaling to Enterprise Clients
+Day 86: Hiring & Building AI Teams
+Day 87: AI Innovation Roadmap
+Day 88: Exit Strategy & Beyond
+Day 89: Final Milestone: Launch Ready
+Day 90: Graduation & Franchise Access
+
+
+=====================================
+SUMMARY
+=====================================
+
+Total Modules: 90
+Total Phases: 3
+
+Phase 1 (Hustler): Days 1-30
+  - Focus: AI Literacy, Prompt Engineering, Content Creation, Freelancing
+  - Credits per module: 25-55
+
+Phase 2 (Automation Agency): Days 31-60
+  - Focus: Automation Systems, Chatbots, Agency Building, Client Delivery
+  - Credits per module: 35-80
+
+Phase 3 (Enterprise): Days 61-90
+  - Focus: Enterprise Strategy, AI Architecture, Franchise Model, Exit Planning
+  - Credits per module: 50-100
+
+=====================================
