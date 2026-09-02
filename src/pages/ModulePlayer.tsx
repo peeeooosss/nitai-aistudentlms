@@ -19,6 +19,8 @@ import { api } from '../services/api'
 import type { Module, Quiz, QuizQuestion } from '../types/dashboard'
 import AIAssistantDrawer from '../components/ai/AIAssistantDrawer'
 import SlideViewer from '../components/slides/SlideViewer'
+import { useAuth } from '../context/AuthContext'
+import { emit, MODULE_COMPLETED } from '../lib/events'
 
 type Step = 'theory' | 'slides' | 'examples' | 'quiz' | 'complete'
 
@@ -49,6 +51,7 @@ export default function ModulePlayer() {
   const { dayNumber } = useParams<{ dayNumber: string }>()
   const navigate = useNavigate()
   const day = parseInt(dayNumber || '1', 10)
+  const { refreshUser } = useAuth()
 
   const [module, setModule] = useState<Module | null>(null)
   const [quiz, setQuiz] = useState<Quiz | null>(null)
@@ -142,6 +145,12 @@ export default function ModulePlayer() {
       await api.post('/progress', { moduleId: module.id })
       setCompletedDays((prev) => [...prev, day].sort((a, b) => a - b))
       setStep('complete')
+      try {
+        await refreshUser()
+      } catch {
+        // non-fatal: credits will sync on next refetch
+      }
+      emit(MODULE_COMPLETED)
       setTimeout(() => {
         if (day < 90) navigate(`/dashboard/student/module/${day + 1}`)
       }, 3000)

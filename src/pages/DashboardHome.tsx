@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
+import { useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Coins,
@@ -15,6 +16,7 @@ import {
 import { api } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 import type { DashboardStats } from '../types/dashboard'
+import { on, MODULE_COMPLETED } from '../lib/events'
 
 interface CurrentModule {
   dayNumber: number
@@ -60,37 +62,47 @@ const fadeIn = {
 
 export default function DashboardHome() {
   const { user } = useAuth()
+  const location = useLocation()
   const [data, setData] = useState<HomeData | null>(null)
   const [completedDays, setCompletedDays] = useState<number[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    Promise.all([
-      api.get<HomeData>('/dashboard'),
-      api.get<{ completedDays: number[] }>('/modules').then((r) => r.completedDays).catch(() => []),
-    ])
-      .then(([home, completed]) => {
-        setData(home)
-        setCompletedDays(completed)
+  const loadHome = useCallback(async () => {
+    try {
+      const [home, completed] = await Promise.all([
+        api.get<HomeData>('/dashboard'),
+        api.get<{ completedDays: number[] }>('/modules').then((r) => r.completedDays).catch(() => []),
+      ])
+      setData(home)
+      setCompletedDays(completed)
+    } catch {
+      setData({
+        stats: {
+          totalCredits: 0,
+          currentStreak: 0,
+          completedDays: 0,
+          totalHours: 0,
+          currentWeek: 1,
+          currentDay: 0,
+          nextDay: 1,
+        },
+        currentModule: null,
+        upcomingSessions: [],
+        recentActivity: [],
       })
-      .catch(() =>
-        setData({
-          stats: {
-            totalCredits: 0,
-            currentStreak: 0,
-            completedDays: 0,
-            totalHours: 0,
-            currentWeek: 1,
-            currentDay: 0,
-            nextDay: 1,
-          },
-          currentModule: null,
-          upcomingSessions: [],
-          recentActivity: [],
-        }),
-      )
-      .finally(() => setLoading(false))
+    } finally {
+      setLoading(false)
+    }
   }, [])
+
+  useEffect(() => {
+    loadHome()
+  }, [loadHome, location.pathname])
+
+  useEffect(() => {
+    const unsubscribe = on(MODULE_COMPLETED, loadHome)
+    return unsubscribe
+  }, [loadHome])
 
   if (loading || !data) {
     return (

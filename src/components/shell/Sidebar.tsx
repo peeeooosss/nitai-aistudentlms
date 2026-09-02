@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { useEffect, useState, useCallback } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Menu,
@@ -14,6 +14,7 @@ import { WeekAccordion } from './WeekAccordion'
 import { useAuth } from '../../context/AuthContext'
 import { api } from '../../services/api'
 import type { Week } from '../../types/dashboard'
+import { on, MODULE_COMPLETED } from '../../lib/events'
 
 interface SidebarProps {
   collapsed: boolean
@@ -34,11 +35,12 @@ const studentLinks = [
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const { user } = useAuth()
+  const location = useLocation()
   const [weeks, setWeeks] = useState<Week[]>([])
   const [completedDays, setCompletedDays] = useState<number[]>([])
   const [currentDay, setCurrentDay] = useState(1)
 
-  useEffect(() => {
+  const loadModules = useCallback(() => {
     api.get<{ weeks: Week[]; completedDays: number[]; currentDay: number }>('/modules')
       .then((data) => {
         setWeeks(data.weeks || [])
@@ -47,6 +49,15 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       })
       .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    loadModules()
+  }, [loadModules, location.pathname])
+
+  useEffect(() => {
+    const unsubscribe = on(MODULE_COMPLETED, loadModules)
+    return unsubscribe
+  }, [loadModules])
 
   return (
     <motion.aside

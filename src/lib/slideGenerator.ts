@@ -20,23 +20,67 @@ export interface Slide {
 
 function cleanText(text: string): string {
   return text
+    .replace(/^\s*#{1,6}\s*/, '')
+    .replace(/^[-*]\s+/, '')
+    .replace(/^\d+[.)]\s+/, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
     .trim()
+}
+
+// A markdown table row starts with '|' and contains at least one other '|'.
+function isTableRow(line: string): boolean {
+  const l = line.trim()
+  return l.startsWith('|') && (l.match(/\|/g) || []).length >= 2
 }
 
 function extractBullets(text: string): string[] {
   const lines = text.split('\n').filter(l => l.trim())
   const bullets: string[] = []
-  for (const line of lines) {
-    const match = line.match(/^[-*]\s+(.+)/)
-    if (match) {
-      bullets.push(cleanText(match[1]))
-    } else if (line.trim() && !line.startsWith('#') && !line.startsWith('```')) {
-      bullets.push(cleanText(line.trim()))
+  let pendingHeading: string | null = null
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim()
+    if (!line) continue
+
+    // skip fenced code fences and table rows/separators
+    if (line.startsWith('```') || isTableRow(line) || /^\|?[\s:|-]+\|?$/.test(line)) continue
+
+    // subsection heading -> start a fresh bold heading item
+    const heading = line.match(/^#{2,6}\s+(.+)/)
+    if (heading) {
+      if (pendingHeading) bullets.push(cleanText(pendingHeading))
+      pendingHeading = cleanText(heading[1])
+      continue
+    }
+
+    const bulletMatch = line.match(/^[-*]\s+(.+)/)
+    if (bulletMatch) {
+      const item = cleanText(bulletMatch[1])
+      bullets.push(pendingHeading ? `<strong>${pendingHeading}:</strong> ${item}` : item)
+      pendingHeading = null
+      continue
+    }
+
+    const numberedMatch = line.match(/^\d+[.)]\s+(.+)/)
+    if (numberedMatch) {
+      const item = cleanText(numberedMatch[1])
+      bullets.push(pendingHeading ? `<strong>${pendingHeading}:</strong> ${item}` : item)
+      pendingHeading = null
+      continue
+    }
+
+    // plain line of text (e.g. a lead paragraph or table content)
+    const item = cleanText(line)
+    if (item) {
+      bullets.push(pendingHeading ? `<strong>${pendingHeading}:</strong> ${item}` : item)
+      pendingHeading = null
     }
   }
+
+  if (pendingHeading) bullets.push(cleanText(pendingHeading))
   return bullets
 }
 
@@ -57,22 +101,26 @@ function extractCards(text: string): { title: string; text: string }[] {
   const cards: { title: string; text: string }[] = []
   const sections = text.split(/###\s+/).filter(s => s.trim())
   for (const section of sections) {
-    const lines = section.split('\n').filter(l => l.trim())
+    const lines = section
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l && !l.startsWith('```') && !isTableRow(l) && !/^\|?[\s:|-]+\|?$/.test(l))
     if (lines.length > 0) {
       const title = cleanText(lines[0].replace(/^#+\s*/, ''))
       const body = lines
         .slice(1)
-        .map(l => cleanText(l.replace(/^[-*]\s+/, '')))
+        .map(l => cleanText(l))
         .filter(Boolean)
         .join(' ')
-      cards.push({ title, text: body || 'Explore this concept further.' })
+      cards.push({ title: title || 'Overview', text: body || 'Explore this concept further.' })
     }
   }
   return cards
 }
 
 function parseSectionHeading(text: string): string {
-  return text.replace(/^#+\s*/, '').trim()
+  const firstLine = text.split('\n').find(l => l.trim()) || ''
+  return cleanText(firstLine.replace(/^#+\s*/, ''))
 }
 
 function getPhaseName(phase: number): string {
@@ -137,8 +185,10 @@ export function generateSlidesFromMarkdown(
     accentColor: 'cyan',
   })
 
-  // Filter out learning objectives, title, separators, key takeaways, practice challenge from content sections
+  // Filter out learning objectives, title preamble, separators, key takeaways, practice challenge from content sections
   const contentSections = sections.filter(s => {
+    // Exclude the preamble chunk before the first "## " heading (H1 + blockquote + separators)
+    if (!/^##\s/.test(s)) return false
     const heading = parseSectionHeading(s)
     return (
       !/^Learning Objectives/i.test(heading) &&
@@ -146,7 +196,7 @@ export function generateSlidesFromMarkdown(
       !/^Practice Challenge/i.test(heading) &&
       !/^Homework/i.test(heading) &&
       !/^Summary$/i.test(heading) &&
-      s.replace(/^#+\s+.+\n?/, '').trim().length > 20
+      s.replace(/^#+\s+.+\n?/, '').replace(/^>\s*.+/m, '').trim().length > 20
     )
   })
 
@@ -210,7 +260,7 @@ export function generateSlidesFromMarkdown(
     const paragraphs = bodyContent
       .split(/\n\n+/)
       .map(p => p.trim())
-      .filter(p => p && !p.startsWith('#') && !p.startsWith('```') && !p.startsWith('-'))
+      .filter(p => p && !p.startsWith('#') && !p.startsWith('```') && !p.startsWith('-') && !isTableRow(p.split('\n')[0]))
 
     const blocks: ContentBlock[] = []
 
@@ -222,9 +272,14 @@ export function generateSlidesFromMarkdown(
         text: cleanText(paragraphs.slice(0, 2).join('\n\n')),
       })
     } else {
+      const cleanFallback = bodyContent
+        .split('\n')
+        .map(l => l.trim())
+        .filter(l => l && !isTableRow(l) && !/^\|?[\s:|-]+\|?$/.test(l))
+        .join(' ')
       blocks.push({
         type: 'paragraph',
-        text: cleanText(bodyContent.slice(0, 300)),
+        text: cleanText(cleanFallback.slice(0, 300)),
       })
     }
 

@@ -106,7 +106,7 @@ export default function SlideViewer({
           </div>
 
           {/* Slide content */}
-          <div className="flex-1 flex flex-col justify-center max-w-4xl">
+          <div className="flex-1 flex flex-col justify-start max-w-4xl w-full overflow-y-auto">
             {slide.layout === 'title' && <TitleSlide slide={slide} accent={accent} />}
             {slide.layout === 'content' && <ContentSlide slide={slide} accent={accent} />}
             {slide.layout === 'code' && <CodeSlide slide={slide} accent={accent} />}
@@ -175,15 +175,15 @@ function TitleSlide({
   accent: string
  }) {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <h1
-        className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-tight leading-[0.95]"
+        className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight leading-tight"
         style={{ fontFamily: "'Inter', system-ui, sans-serif", color: '#e8e6e1' }}
       >
         {slide.title.split(' ').map((word, i) => {
           if (i === 1 || i === 2) {
             return (
-              <span key={i} className="italic font-normal" style={{ color: accent }}>
+              <span key={i} className="italic font-medium" style={{ color: accent }}>
                 {word}{' '}
               </span>
             )
@@ -240,15 +240,15 @@ function ContentSlide({
   accent: string
  }) {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <h2
-        className="text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight leading-tight"
+        className="text-xl sm:text-2xl font-semibold tracking-tight leading-tight"
         style={{ fontFamily: "'Inter', system-ui, sans-serif", color: '#e8e6e1' }}
       >
         {slide.title.split(' ').map((word, i) => {
           if (i === 0 || (slide.title.split(' ').length > 3 && i === 2)) {
             return (
-              <span key={i} className="italic font-normal" style={{ color: accent }}>
+              <span key={i} className="italic font-medium" style={{ color: accent }}>
                 {word}{' '}
               </span>
             )
@@ -261,7 +261,7 @@ function ContentSlide({
         <div key={i}>
           {block.type === 'paragraph' && (
             <p
-              className="text-base leading-relaxed max-w-2xl"
+              className="text-sm leading-relaxed max-w-2xl"
               style={{ color: 'rgba(232,230,225,0.65)' }}
               dangerouslySetInnerHTML={{ __html: block.text || '' }}
             />
@@ -298,15 +298,15 @@ function CodeSlide({
  }) {
   const codeBlock = slide.contentBlocks.find(b => b.type === 'code')
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <h2
-        className="text-3xl sm:text-4xl font-light tracking-tight leading-tight"
+        className="text-xl sm:text-2xl font-semibold tracking-tight leading-tight"
         style={{ fontFamily: "'Inter', system-ui, sans-serif", color: '#e8e6e1' }}
       >
         {slide.title.split(' ').map((word, i) => {
           if (i === 0) {
             return (
-              <span key={i} className="italic font-normal" style={{ color: accent }}>
+              <span key={i} className="italic font-medium" style={{ color: accent }}>
                 {word}{' '}
               </span>
             )
@@ -321,7 +321,7 @@ function CodeSlide({
           style={{ background: '#141821', borderColor: 'rgba(255,255,255,0.08)' }}
         >
           <div
-            className="flex items-center gap-2 px-4 py-2.5 border-b"
+            className="flex items-center gap-2 px-4 py-2 border-b"
             style={{ borderColor: 'rgba(255,255,255,0.06)' }}
           >
             <div className="flex gap-1.5">
@@ -329,7 +329,7 @@ function CodeSlide({
               <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
               <div className="w-2.5 h-2.5 rounded-full bg-white/10" />
             </div>
-            <span className="font-mono text-[9px] tracking-[0.15em] uppercase text-white/25 ml-2">
+            <span className="font-mono text-[10px] tracking-[0.15em] uppercase text-white/25 ml-2">
               {codeBlock.language || 'code'}
             </span>
           </div>
@@ -356,15 +356,15 @@ function KeypointsSlide({
   const cards = gridBlock?.cards || []
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <h2
-        className="text-3xl sm:text-4xl font-light tracking-tight leading-tight"
+        className="text-xl sm:text-2xl font-semibold tracking-tight leading-tight"
         style={{ fontFamily: "'Inter', system-ui, sans-serif", color: '#e8e6e1' }}
       >
         {slide.title.split(' ').map((word, i) => {
           if (i === 0) {
             return (
-              <span key={i} className="italic font-normal" style={{ color: accent }}>
+              <span key={i} className="italic font-medium" style={{ color: accent }}>
                 {word}{' '}
               </span>
             )
@@ -377,11 +377,11 @@ function KeypointsSlide({
         {cards.map((card, i) => (
           <div
             key={i}
-            className="p-5 rounded-xl border"
+            className="p-4 rounded-xl border"
             style={{ background: '#141821', borderColor: 'rgba(255,255,255,0.08)' }}
           >
             <div
-              className="font-mono text-[9px] tracking-[0.25em] uppercase mb-3 flex items-center gap-2"
+              className="font-mono text-[9px] tracking-[0.25em] uppercase mb-2 flex items-center gap-2"
               style={{ color: accent }}
             >
               <span
@@ -391,7 +391,7 @@ function KeypointsSlide({
               {String(i + 1).padStart(2, '0')}
             </div>
             <h3
-              className="text-lg font-medium mb-2"
+              className="text-base font-semibold mb-1.5"
               style={{ color: '#e8e6e1' }}
             >
               {card.title}
@@ -414,13 +414,13 @@ function TakeawaysSlide({
   accent: string
  }) {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <h2
-        className="text-3xl sm:text-4xl font-light tracking-tight leading-tight"
+        className="text-xl sm:text-2xl font-semibold tracking-tight leading-tight"
         style={{ fontFamily: "'Inter', system-ui, sans-serif", color: '#e8e6e1' }}
       >
         Why this matters{' '}
-        <span className="italic font-normal" style={{ color: accent }}>
+        <span className="italic font-medium" style={{ color: accent }}>
           for you.
         </span>
       </h2>
@@ -458,13 +458,13 @@ function WrapupSlide({
   accent: string
  }) {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <h2
-        className="text-3xl sm:text-4xl font-light tracking-tight leading-tight"
+        className="text-xl sm:text-2xl font-semibold tracking-tight leading-tight"
         style={{ fontFamily: "'Inter', system-ui, sans-serif", color: '#e8e6e1' }}
       >
         Practice{' '}
-        <span className="italic font-normal" style={{ color: accent }}>
+        <span className="italic font-medium" style={{ color: accent }}>
           Challenge.
         </span>
       </h2>
