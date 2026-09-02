@@ -7,50 +7,27 @@ import {
   ChevronRight,
   BookOpen,
   Lightbulb,
+  Presentation,
   ClipboardCheck,
   CheckCircle,
   Award,
   Bot,
-  ExternalLink,
   Lock,
   ArrowRight,
 } from 'lucide-react'
 import { api } from '../services/api'
 import type { Module, Quiz, QuizQuestion } from '../types/dashboard'
 import AIAssistantDrawer from '../components/ai/AIAssistantDrawer'
+import SlideViewer from '../components/slides/SlideViewer'
 
-type Step = 'theory' | 'examples' | 'quiz' | 'complete'
+type Step = 'theory' | 'slides' | 'examples' | 'quiz' | 'complete'
 
 const steps: { key: Step; label: string; icon: typeof BookOpen }[] = [
   { key: 'theory', label: 'Theory', icon: BookOpen },
+  { key: 'slides', label: 'Slides', icon: Presentation },
   { key: 'examples', label: 'Examples', icon: Lightbulb },
   { key: 'quiz', label: 'Quiz', icon: ClipboardCheck },
 ]
-
-function isGoogleDriveUrl(url: string): boolean {
-  return url.includes('drive.google.com/file/d/')
-}
-
-function getGoogleDriveEmbedUrl(url: string): string {
-  const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)
-  if (match) return `https://drive.google.com/file/d/${match[1]}/preview`
-  return url
-}
-
-function isYouTubeUrl(url: string): boolean {
-  return url.includes('youtube.com') || url.includes('youtu.be')
-}
-
-function getYouTubeEmbedUrl(url: string): string {
-  if (url.includes('youtube.com/embed/')) return url
-  let videoId = ''
-  if (url.includes('youtube.com/watch?v=')) {
-    videoId = url.split('v=')[1]?.split('&')[0] || ''
-  } else if (url.includes('youtu.be/')) {
-    videoId = url.split('youtu.be/')[1]?.split('?')[0] || ''
-  }
-  return videoId ? `https://www.youtube.com/embed/${videoId}` : url
-}
 
 function renderMarkdown(md: string): string {
   let html = md
@@ -66,12 +43,6 @@ function renderMarkdown(md: string): string {
     .replace(/\n\n/g, '</p><p class="text-white/60 leading-relaxed mb-3">')
   html = '<p class="text-white/60 leading-relaxed mb-3">' + html + '</p>'
   return html
-}
-
-function getVideoEmbedUrl(url: string): string {
-  if (isGoogleDriveUrl(url)) return getGoogleDriveEmbedUrl(url)
-  if (isYouTubeUrl(url)) return getYouTubeEmbedUrl(url)
-  return url
 }
 
 export default function ModulePlayer() {
@@ -188,12 +159,14 @@ export default function ModulePlayer() {
   }
 
   const nextStep = () => {
-    if (step === 'theory') setStep('examples')
+    if (step === 'theory') setStep('slides')
+    else if (step === 'slides') setStep('examples')
     else if (step === 'examples') setStep('quiz')
   }
 
   const prevStep = () => {
-    if (step === 'examples') setStep('theory')
+    if (step === 'slides') setStep('theory')
+    else if (step === 'examples') setStep('slides')
     else if (step === 'quiz') setStep('examples')
   }
 
@@ -248,10 +221,6 @@ export default function ModulePlayer() {
     PROJECT: 'Project',
     LIVE_INTERACTIVE: 'Live',
   }
-
-  const videoEmbedUrl = module.videoUrl ? getVideoEmbedUrl(module.videoUrl) : null
-  const isGDrive = module.videoUrl ? isGoogleDriveUrl(module.videoUrl) : false
-  const isYT = module.videoUrl ? isYouTubeUrl(module.videoUrl) : false
 
   const contentHtml = module.contentMarkdown ? renderMarkdown(module.contentMarkdown) : '<p class="text-white/40">No content available for this module yet.</p>'
 
@@ -313,7 +282,9 @@ export default function ModulePlayer() {
         <div className="flex items-center justify-center gap-2 mb-8">
           {steps.map((s, i) => {
             const isActive = s.key === step
-            const isComplete = (step === 'examples' && i === 0) || (step === 'quiz' && i <= 1) || (step === 'complete' && i <= 2)
+            const stepIndex = steps.findIndex(x => x.key === step)
+            const isComplete =
+              step !== 'complete' && stepIndex >= 0 && i < stepIndex
             const Icon = s.icon
             return (
               <div key={s.key} className="flex items-center">
@@ -372,43 +343,6 @@ export default function ModulePlayer() {
               transition={{ duration: 0.3 }}
               className="space-y-6"
             >
-              {videoEmbedUrl && (
-                <div className="relative aspect-video rounded-2xl overflow-hidden bg-nitai-card border border-white/10">
-                  {isGDrive || isYT ? (
-                    <iframe
-                      src={videoEmbedUrl}
-                      title={`Day ${day} video lesson`}
-                      allow="autoplay; fullscreen; encrypted-media"
-                      allowFullScreen
-                      className="w-full h-full border-0"
-                    />
-                  ) : (
-                    <video
-                      controls
-                      controlsList="nodownload noremoteplayback"
-                      disablePictureInPicture
-                      className="w-full h-full object-contain bg-black/40"
-                      src={videoEmbedUrl}
-                    >
-                      Your browser does not support video playback.
-                    </video>
-                  )}
-                  {(isGDrive || isYT) && (
-                    <div className="absolute bottom-2 right-2">
-                      <a
-                        href={module.videoUrl!}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white/80 bg-black/60 backdrop-blur-sm rounded-xl hover:bg-black/80 transition-colors"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Open fullscreen</span>
-                      </a>
-                    </div>
-                  )}
-                </div>
-              )}
-
               <div className="bg-nitai-card border border-white/5 rounded-2xl p-6 sm:p-8">
                 <div className="flex items-center gap-2 mb-5">
                   <BookOpen className="w-5 h-5 text-nitai-cyan" />
@@ -428,6 +362,54 @@ export default function ModulePlayer() {
                   className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-nitai-accent to-nitai-cyan text-white font-semibold text-sm shadow-lg shadow-nitai-accent/20 hover:shadow-nitai-accent/40 transition-all duration-300"
                 >
                   Next Step
+                  <ArrowRight className="w-4 h-4" />
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 'slides' && (
+            <motion.div
+              key="slides"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <Presentation className="w-5 h-5 text-nitai-accent-light" />
+                <h2 className="text-lg font-bold text-white">Presentation Slides</h2>
+                <span className="ml-auto text-xs text-white/40 font-mono tracking-wider">
+                  Use ← → arrow keys to navigate
+                </span>
+              </div>
+
+              <SlideViewer
+                dayNumber={day}
+                title={module.title}
+                contentMarkdown={module.contentMarkdown || ''}
+                phase={day <= 30 ? 1 : day <= 60 ? 2 : 3}
+                phaseName={day <= 30 ? 'Hustler' : day <= 60 ? 'Automation Agency' : 'Enterprise'}
+              />
+
+              <div className="flex justify-between">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={prevStep}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 text-white/60 font-semibold text-sm border border-white/10 hover:bg-white/10 transition-all duration-300"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Theory
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={nextStep}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-nitai-accent to-nitai-cyan text-white font-semibold text-sm shadow-lg shadow-nitai-accent/20 hover:shadow-nitai-accent/40 transition-all duration-300"
+                >
+                  Examples
                   <ArrowRight className="w-4 h-4" />
                 </motion.button>
               </div>
@@ -484,7 +466,7 @@ export default function ModulePlayer() {
                   className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/5 text-white/60 font-semibold text-sm border border-white/10 hover:bg-white/10 transition-all duration-300"
                 >
                   <ChevronLeft className="w-4 h-4" />
-                  Theory
+                  Slides
                 </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.02 }}
@@ -754,9 +736,9 @@ export default function ModulePlayer() {
 
             <div className="flex items-center gap-2">
               {steps.map((s) => {
-                const isComplete =
-                  (step === 'quiz' && s.key !== 'quiz') ||
-                  (step === 'examples' && s.key === 'theory')
+                const activeIndex = steps.findIndex(x => x.key === step)
+                const idx = steps.findIndex(x => x.key === s.key)
+                const isComplete = step !== ('complete' as Step) && activeIndex > idx
                 return (
                   <div
                     key={s.key}

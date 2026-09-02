@@ -2,7 +2,8 @@ import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { modules as defaultModules, getPhaseGradient } from '../../data/modules'
 import { api } from '../../services/api'
-import { Search, Edit3, Save, X } from 'lucide-react'
+import { Search, Edit3, Save, X, Monitor, X as CloseX } from 'lucide-react'
+import SlideViewer from '../../components/slides/SlideViewer'
 
 interface DbModule {
   id: number
@@ -13,6 +14,7 @@ interface DbModule {
   description: string
   creditsReward: number
   videoUrl: string | null
+  contentMarkdown?: string | null
 }
 
 export default function AdminModules() {
@@ -23,6 +25,7 @@ export default function AdminModules() {
   const [editData, setEditData] = useState({ title: '', videoUrl: '', creditsReward: 0 })
   const [phaseFilter, setPhaseFilter] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
+  const [previewModule, setPreviewModule] = useState<DbModule | null>(null)
 
   useEffect(() => {
     fetchModules()
@@ -90,7 +93,7 @@ export default function AdminModules() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white">Modules</h1>
-            <p className="text-white/40 text-sm mt-1">Video Uploads & 90-Day Block Builder</p>
+            <p className="text-white/40 text-sm mt-1">90-Day Module Builder & Slide Content</p>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-nitai-accent/10 text-nitai-accent-light text-xs border border-nitai-accent/20">
             {allModules.length} blocks
@@ -132,7 +135,7 @@ export default function AdminModules() {
                   <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white/30">Day</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white/30">Phase</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white/30">Title</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white/30 hidden sm:table-cell">Video URL</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white/30 hidden sm:table-cell">Slides</th>
                   <th className="text-center px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white/30">Credits</th>
                   <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-widest text-white/30">Actions</th>
                 </tr>
@@ -160,17 +163,13 @@ export default function AdminModules() {
                       )}
                     </td>
                     <td className="px-4 py-3 hidden sm:table-cell">
-                      {editId === mod.id ? (
-                        <input
-                          value={editData.videoUrl}
-                          onChange={(e) => setEditData({ ...editData, videoUrl: e.target.value })}
-                          className="w-full px-3 py-1.5 rounded-lg bg-white/[0.05] border border-nitai-cyan/50 text-white text-sm outline-none"
-                        />
-                      ) : (
-                        <span className="text-xs text-white/30 font-mono truncate block max-w-[200px]">
-                          {mod.videoUrl || `https://youtube.com/watch?v=module-${mod.dayNumber}`}
-                        </span>
-                      )}
+                      <button
+                        onClick={() => setPreviewModule(mod)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-nitai-cyan/10 text-nitai-cyan border border-nitai-cyan/20 hover:bg-nitai-cyan/20 transition-all duration-200 font-mono text-[10px] tracking-wider uppercase"
+                      >
+                        <Monitor className="w-3 h-3" />
+                        Preview
+                      </button>
                     </td>
                     <td className="px-4 py-3 text-center">
                       {editId === mod.id ? (
@@ -195,12 +194,21 @@ export default function AdminModules() {
                           </button>
                         </div>
                       ) : (
-                        <button
-                          onClick={() => startEdit(mod)}
-                          className="p-1.5 rounded-lg bg-white/[0.03] text-white/30 hover:text-nitai-cyan hover:bg-white/[0.06] transition-all duration-300 opacity-0 group-hover:opacity-100"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => setPreviewModule(mod)}
+                            title="Preview slides"
+                            className="p-1.5 rounded-lg bg-nitai-cyan/10 text-nitai-cyan hover:bg-nitai-cyan/20 transition-all duration-200"
+                          >
+                            <Monitor className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => startEdit(mod)}
+                            className="p-1.5 rounded-lg bg-white/[0.03] text-white/30 hover:text-nitai-cyan hover:bg-white/[0.06] transition-all duration-300 opacity-0 group-hover:opacity-100"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -213,6 +221,35 @@ export default function AdminModules() {
           )}
         </div>
       </motion.div>
+
+      {previewModule && (
+        <div className="fixed inset-0 z-50 bg-nitai-dark/95 backdrop-blur-xl flex items-center justify-center p-4 sm:p-8">
+          <div className="w-full max-w-5xl flex flex-col bg-nitai-deeper/80 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 bg-white/[0.02]">
+              <div>
+                <p className="text-xs font-mono tracking-widest uppercase text-white/30">Slide Preview</p>
+                <h3 className="text-sm font-bold text-white mt-0.5">Day {previewModule.dayNumber} · {previewModule.title}</h3>
+              </div>
+              <button
+                onClick={() => setPreviewModule(null)}
+                className="p-2 rounded-lg bg-white/[0.03] text-white/40 hover:text-white/80 hover:bg-white/[0.08] transition-all duration-200"
+              >
+                <CloseX className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 sm:p-6">
+              <SlideViewer
+                dayNumber={previewModule.dayNumber}
+                title={previewModule.title}
+                contentMarkdown={previewModule.contentMarkdown || ''}
+                phase={previewModule.phase}
+                phaseName={previewModule.phaseName}
+                compact
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
