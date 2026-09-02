@@ -22,19 +22,20 @@ export const handler: NetlifyHandler = async (event) => {
 
   if (event.httpMethod === 'GET') {
     try {
-      const assignments = await prisma.assignment.findMany({
+      const submissions = await prisma.assignmentSubmission.findMany({
         where: { userId: payload.userId },
-        include: { module: true },
+        include: { assignment: { include: { module: true } } },
         orderBy: { submittedAt: 'desc' },
       })
 
       return successResponse({
-        assignments: assignments.map(a => ({
-          id: a.id,
-          moduleId: a.moduleId,
-          moduleTitle: a.module.title,
-          status: a.status,
-          submittedAt: a.submittedAt,
+        submissions: submissions.map(s => ({
+          id: s.id,
+          assignmentId: s.assignmentId,
+          moduleId: s.assignment.moduleId,
+          moduleTitle: s.assignment.module.title,
+          status: s.status,
+          submittedAt: s.submittedAt,
         })),
       }, 200, origin)
     } catch (error) {
@@ -56,32 +57,34 @@ export const handler: NetlifyHandler = async (event) => {
         return errorResponse('Assignment must be at least 20 characters', 400, origin)
       }
 
-      const module = await prisma.module.findUnique({ where: { id: moduleId } })
-      if (!module) {
-        return errorResponse('Module not found', 404, origin)
+      const assignment = await prisma.assignment.findUnique({
+        where: { moduleId },
+      })
+      if (!assignment) {
+        return errorResponse('No assignment found for this module', 404, origin)
       }
 
-      const existing = await prisma.assignment.findUnique({
-        where: { userId_moduleId: { userId: payload.userId, moduleId } },
+      const existing = await prisma.assignmentSubmission.findUnique({
+        where: { userId_assignmentId: { userId: payload.userId, assignmentId: assignment.id } },
       })
 
       if (existing) {
         return errorResponse('You have already submitted an assignment for this module', 409, origin)
       }
 
-      const assignment = await prisma.assignment.create({
+      const submission = await prisma.assignmentSubmission.create({
         data: {
           userId: payload.userId,
-          moduleId,
+          assignmentId: assignment.id,
           content,
         },
       })
 
       return successResponse({
-        assignment: {
-          id: assignment.id,
-          status: assignment.status,
-          submittedAt: assignment.submittedAt,
+        submission: {
+          id: submission.id,
+          status: submission.status,
+          submittedAt: submission.submittedAt,
         },
       }, 201, origin)
     } catch (error) {

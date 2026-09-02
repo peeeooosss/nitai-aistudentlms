@@ -30,6 +30,42 @@ enum NotificationTarget {
   INACTIVE
 }
 
+enum SessionType {
+  THEORY
+  QUIZ
+  PROJECT
+  LIVE_INTERACTIVE
+}
+
+enum SessionStatus {
+  DRAFT
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum ResourceType {
+  VIDEO
+  DRIVE
+  LINK
+  UPLOAD
+  NOTE
+}
+
+enum ResourceScope {
+  GLOBAL
+  PHASE
+  WEEK
+  DAY
+}
+
+enum Visibility {
+  PUBLIC
+  STUDENTS
+  ADMIN
+}
+
 model User {
   id            String         @id @default(cuid())
   email         String         @unique
@@ -42,58 +78,91 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  progress          UserProgress[]
-  quizSubmissions   QuizSubmission[]
-  assignments       Assignment[]
-  credits           UserCredit?
-  purchases         UserStorePurchase[]
-  notifications     UserNotification[]
-  settings          UserSetting?
+  progress              UserProgress[]
+  quizSubmissions       QuizSubmission[]
+  assignmentSubmissions AssignmentSubmission[]
+  credits               UserCredit?
+  purchases             UserStorePurchase[]
+  notifications         UserNotification[]
+  settings              UserSetting?
+  savedResources        UserSavedResource[]
 
   @@index([email])
   @@index([provider, providerId])
 }
 
+model Week {
+  id          Int      @id @default(autoincrement())
+  weekNumber  Int      @unique
+  title       String
+  phase       Int
+  phaseName   String
+  startDate   DateTime
+  endDate     DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  modules     Module[]
+  progress    UserProgress[]
+
+  @@index([weekNumber])
+  @@index([phase])
+}
+
 model Module {
-  id            Int      @id @default(autoincrement())
-  dayNumber     Int      @unique
+  id            Int          @id @default(autoincrement())
+  weekId        Int
+  week          Week         @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  dayNumber     Int          @unique
+  dayInWeek     Int
+  weekNumber    Int
+  sessionType   SessionType
   title         String
-  phase         Int
-  phaseName     String
   description   String
-  creditsReward Int
+  contentMarkdown String?
   videoUrl      String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  creditsReward Int
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   progress      UserProgress[]
   quiz          Quiz?
-  assignments   Assignment[]
+  assignment    Assignment?
+  liveSession   LiveSession?
+  aiContext     ModuleAIContext?
+  resources     Resource[]
 
+  @@unique([weekId, dayInWeek])
   @@index([dayNumber])
-  @@index([phase])
+  @@index([weekNumber])
+  @@index([sessionType])
 }
 
 model UserProgress {
   id          String    @id @default(cuid())
   userId      String
   moduleId    Int
+  weekId      Int?
   completed   Boolean   @default(false)
   completedAt DateTime?
   createdAt   DateTime  @default(now())
 
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   module      Module    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  week        Week?     @relation(fields: [weekId], references: [id], onDelete: SetNull)
 
   @@unique([userId, moduleId])
   @@index([userId])
   @@index([moduleId])
+  @@index([weekId])
 }
 
 model Quiz {
   id          String   @id @default(cuid())
   moduleId    Int      @unique
   questions   Json
+  passScore   Int      @default(75)
+  timeLimit   Int?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -118,20 +187,139 @@ model QuizSubmission {
 }
 
 model Assignment {
-  id          String           @id @default(cuid())
-  userId      String
-  moduleId    Int
-  content     String
-  status      SubmissionStatus @default(PENDING)
-  submittedAt DateTime         @default(now())
-  reviewedAt  DateTime?
+  id            String           @id @default(cuid())
+  moduleId      Int              @unique
+  prompt        String
+  type          AssignmentType   @default(TEXT)
+  maxCredits    Int              @default(50)
+  dueDate       DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  module      Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  module        Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  submissions   AssignmentSubmission[]
+}
 
-  @@unique([userId, moduleId])
+enum AssignmentType {
+  TEXT
+  URL
+  FILE
+}
+
+model AssignmentSubmission {
+  id            String           @id @default(cuid())
+  userId        String
+  assignmentId  String
+  content       String
+  status        SubmissionStatus @default(PENDING)
+  submittedAt   DateTime         @default(now())
+  reviewedAt    DateTime?
+  aiScore       Int?
+  aiFeedback    String?
+
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignment    Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, assignmentId])
   @@index([userId])
+  @@index([assignmentId])
+}
+
+model LiveSession {
+  id            String        @id @default(cuid())
+  moduleId      Int           @unique
+  module        Module        @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  scheduledAt   DateTime
+  duration      Int           @default(90)
+  timezone      String        @default("Asia/Kolkata")
+  recurring     Boolean       @default(false)
+  recurringRule String?
+
+  meetLink      String?
+  recordingUrl  String?
+  platform      String        @default("Zoom")
+
+  topic         String
+  description   String?
+  hostName      String?
+  hostEmail     String?
+
+  resources     Json?
+  status        SessionStatus @default(DRAFT)
+  isPublic      Boolean       @default(true)
+  viewCount     Int           @default(0)
+  reminderSent  Boolean       @default(false)
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([scheduledAt])
+  @@index([status])
+}
+
+model Resource {
+  id            String           @id @default(cuid())
+  type          ResourceType
+  title         String
+  description   String?
+
+  url           String?
+  platform      String?
+  filePath      String?
+  fileSize      Int?
+  mimeType      String?
+  thumbnailUrl  String?
+  duration      Int?
+
+  scope         ResourceScope    @default(GLOBAL)
+  weekNumber    Int?
+  dayNumber     Int?
+  phase         Int?
+  moduleId      Int?
+  module        Module?          @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+
+  visibility    Visibility       @default(PUBLIC)
+  isFeatured    Boolean          @default(false)
+  tags          String[]         @default([])
+
+  viewCount     Int              @default(0)
+  downloadCount Int              @default(0)
+  saveCount     Int              @default(0)
+
+  createdBy     String
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  savedBy       UserSavedResource[]
+
+  @@index([scope, weekNumber, dayNumber])
+  @@index([type])
+  @@index([visibility])
+  @@index([isFeatured])
   @@index([moduleId])
+}
+
+model UserSavedResource {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resourceId  String
+  resource    Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, resourceId])
+  @@index([userId])
+}
+
+model ModuleAIContext {
+  id          String   @id @default(cuid())
+  moduleId    Int      @unique
+  module      Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  systemPrompt String
+  ragChunks   Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model UserCredit {

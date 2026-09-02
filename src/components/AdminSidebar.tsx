@@ -6,11 +6,15 @@ import {
   Bell,
   Store,
   ChevronRight,
+  Calendar,
+  FolderOpen,
 } from 'lucide-react'
 
 const sidebarLinks = [
   { href: '/admin/overview', icon: LayoutDashboard, label: 'Overview' },
   { href: '/admin/modules', icon: BookOpen, label: 'Modules' },
+  { href: '/admin/live-sessions', icon: Calendar, label: 'Live Sessions' },
+  { href: '/admin/resources', icon: FolderOpen, label: 'Resources' },
   { href: '/admin/evaluations', icon: FileCheck, label: 'Evaluations' },
   { href: '/admin/notifications', icon: Bell, label: 'Notifications' },
   { href: '/admin/economy', icon: Store, label: 'Economy' },

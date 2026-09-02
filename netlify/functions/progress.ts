@@ -27,25 +27,14 @@ export const handler: NetlifyHandler = async (event) => {
         include: { module: true },
       })
 
-      const completedModuleIds = progress
+      const completedDays = progress
         .filter(p => p.completed)
-        .map(p => p.moduleId)
-
-      const moduleEdits: Record<number, { title?: string; videoUrl?: string; creditsReward?: number }> = {}
-      for (const dayNum of completedModuleIds) {
-        const module = progress.find(p => p.moduleId === dayNum)?.module
-        if (module) {
-          moduleEdits[dayNum] = {
-            title: module.title,
-            videoUrl: module.videoUrl || undefined,
-            creditsReward: module.creditsReward,
-          }
-        }
-      }
+        .map(p => p.module.dayNumber)
+        .sort((a, b) => a - b)
 
       return successResponse({
-        completedModules: completedModuleIds,
-        totalCompleted: completedModuleIds.length,
+        completedDays,
+        totalCompleted: completedDays.length,
       }, 200, origin)
     } catch (error) {
       console.error('Get progress error:', error)

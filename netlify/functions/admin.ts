@@ -87,6 +87,8 @@ export const handler: NetlifyHandler = async (event) => {
           ...(body.title !== undefined && { title: body.title }),
           ...(body.videoUrl !== undefined && { videoUrl: body.videoUrl }),
           ...(body.creditsReward !== undefined && { creditsReward: body.creditsReward }),
+          ...(body.contentMarkdown !== undefined && { contentMarkdown: body.contentMarkdown }),
+          ...(body.description !== undefined && { description: body.description }),
         },
       })
 
@@ -97,10 +99,249 @@ export const handler: NetlifyHandler = async (event) => {
     }
   }
 
+  if (event.httpMethod === 'GET' && path.endsWith('/admin/live-sessions')) {
+    try {
+      const qp = event.queryStringParameters || {}
+      const where: any = {}
+      if (qp.status) where.status = qp.status
+
+      const sessions = await prisma.liveSession.findMany({
+        where,
+        include: { module: { select: { id: true, title: true, dayNumber: true, weekNumber: true } } },
+        orderBy: { scheduledAt: 'desc' },
+      })
+
+      return successResponse({ sessions }, 200, origin)
+    } catch (error) {
+      console.error('Admin live sessions error:', error)
+      return errorResponse('Internal server error', 500, origin)
+    }
+  }
+
+  if (event.httpMethod === 'POST' && path.endsWith('/admin/live-sessions')) {
+    try {
+      const body = JSON.parse(event.body || '{}')
+      const { moduleId, scheduledAt, duration, meetLink, topic, description, hostName, platform, status, resources, isPublic } = body
+
+      if (!moduleId || !scheduledAt || !topic) {
+        return errorResponse('moduleId, scheduledAt, and topic required', 400, origin)
+      }
+
+      const lookup = await prisma.module.findUnique({ where: { id: parseInt(moduleId) } })
+      if (!lookup) return errorResponse('Module not found', 404, origin)
+
+      const session = await prisma.liveSession.create({
+        data: {
+          moduleId: lookup.id,
+          scheduledAt: new Date(scheduledAt),
+          duration: duration || 90,
+          meetLink,
+          topic,
+          description,
+          hostName,
+          platform: platform || 'Zoom',
+          status: status || 'SCHEDULED',
+          isPublic: isPublic !== undefined ? isPublic : true,
+          resources: resources || [],
+        },
+      })
+
+      return successResponse({ session }, 201, origin)
+    } catch (error) {
+      console.error('Admin create live session error:', error)
+      return errorResponse('Internal server error', 500, origin)
+    }
+  }
+
+  if (event.httpMethod === 'PUT' && path.includes('/admin/live-sessions/') && !path.endsWith('/publish') && !path.endsWith('/recording')) {
+    try {
+      const id = path.split('/').pop() || ''
+      const body = JSON.parse(event.body || '{}')
+
+      if (body.moduleId) {
+        const lookup = await prisma.module.findUnique({ where: { id: parseInt(body.moduleId) } })
+        if (!lookup) return errorResponse('Module not found', 404, origin)
+      }
+
+      const session = await prisma.liveSession.update({
+        where: { id },
+        data: {
+          ...(body.scheduledAt !== undefined && { scheduledAt: new Date(body.scheduledAt) }),
+          ...(body.duration !== undefined && { duration: body.duration }),
+          ...(body.meetLink !== undefined && { meetLink: body.meetLink }),
+          ...(body.topic !== undefined && { topic: body.topic }),
+          ...(body.description !== undefined && { description: body.description }),
+          ...(body.hostName !== undefined && { hostName: body.hostName }),
+          ...(body.platform !== undefined && { platform: body.platform }),
+          ...(body.status !== undefined && { status: body.status }),
+          ...(body.isPublic !== undefined && { isPublic: body.isPublic }),
+          ...(body.resources !== undefined && { resources: body.resources }),
+        },
+      })
+
+      return successResponse({ session }, 200, origin)
+    } catch (error) {
+      console.error('Admin update live session error:', error)
+      return errorResponse('Internal server error', 500, origin)
+    }
+  }
+
+  if (event.httpMethod === 'DELETE' && path.includes('/admin/live-sessions/')) {
+    try {
+      const id = path.split('/').pop() || ''
+      await prisma.liveSession.delete({ where: { id } })
+      return successResponse({ message: 'Session deleted' }, 200, origin)
+    } catch (error) {
+      console.error('Admin delete live session error:', error)
+      return errorResponse('Internal server error', 500, origin)
+    }
+  }
+
+  if (event.httpMethod === 'POST' && path.endsWith('/publish') && path.includes('/admin/live-sessions/')) {
+    try {
+      const segments = path.split('/').filter(Boolean)
+      const id = segments[segments.length - 2]
+      const session = await prisma.liveSession.update({
+        where: { id },
+        data: { status: 'SCHEDULED' },
+      })
+      return successResponse({ session }, 200, origin)
+    } catch (error) {
+      console.error('Admin publish session error:', error)
+      return errorResponse('Internal server error', 500, origin)
+    }
+  }
+
+  if (event.httpMethod === 'POST' && path.endsWith('/recording') && path.includes('/admin/live-sessions/')) {
+    try {
+      const segments = path.split('/').filter(Boolean)
+      const id = segments[segments.length - 2]
+      const body = JSON.parse(event.body || '{}')
+      const session = await prisma.liveSession.update({
+        where: { id },
+        data: {
+          recordingUrl: body.recordingUrl,
+          status: body.status || 'COMPLETED',
+        },
+      })
+      return successResponse({ session }, 200, origin)
+    } catch (error) {
+      console.error('Admin add recording error:', error)
+      return errorResponse('Internal server error', 500, origin)
+    }
+  }
+
+  if (event.httpMethod === 'GET' && path.endsWith('/admin/resources')) {
+    try {
+      const qp = event.queryStringParameters || {}
+      const where: any = {}
+      if (qp.type) where.type = qp.type
+      if (qp.scope) where.scope = qp.scope
+      if (qp.search) {
+        where.OR = [
+          { title: { contains: qp.search, mode: 'insensitive' } },
+          { description: { contains: qp.search, mode: 'insensitive' } },
+        ]
+      }
+
+      const resources = await prisma.resource.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+      })
+
+      return successResponse({ resources }, 200, origin)
+    } catch (error) {
+      console.error('Admin resources error:', error)
+      return errorResponse('Internal server error', 500, origin)
+    }
+  }
+
+  if (event.httpMethod === 'POST' && path.endsWith('/admin/resources')) {
+    try {
+      const body = JSON.parse(event.body || '{}')
+      const { type, title, description, url, platform, filePath, mimeType, scope, weekNumber, dayNumber, phase, visibility, isFeatured, tags } = body
+
+      if (!type || !title) {
+        return errorResponse('type and title required', 400, origin)
+      }
+
+      const resource = await prisma.resource.create({
+        data: {
+          type,
+          title,
+          description,
+          url,
+          platform,
+          filePath,
+          mimeType,
+          scope: scope || 'GLOBAL',
+          weekNumber,
+          dayNumber,
+          phase,
+          visibility: visibility || 'PUBLIC',
+          isFeatured: isFeatured || false,
+          tags: tags || [],
+          createdBy: payload.userId,
+        },
+      })
+
+      return successResponse({ resource }, 201, origin)
+    } catch (error) {
+      console.error('Admin create resource error:', error)
+      return errorResponse('Internal server error', 500, origin)
+    }
+  }
+
+  if (event.httpMethod === 'PUT' && path.includes('/admin/resources/')) {
+    try {
+      const id = path.split('/').pop() || ''
+      const body = JSON.parse(event.body || '{}')
+
+      const resource = await prisma.resource.update({
+        where: { id },
+        data: {
+          ...(body.type !== undefined && { type: body.type }),
+          ...(body.title !== undefined && { title: body.title }),
+          ...(body.description !== undefined && { description: body.description }),
+          ...(body.url !== undefined && { url: body.url }),
+          ...(body.platform !== undefined && { platform: body.platform }),
+          ...(body.filePath !== undefined && { filePath: body.filePath }),
+          ...(body.mimeType !== undefined && { mimeType: body.mimeType }),
+          ...(body.scope !== undefined && { scope: body.scope }),
+          ...(body.weekNumber !== undefined && { weekNumber: body.weekNumber }),
+          ...(body.dayNumber !== undefined && { dayNumber: body.dayNumber }),
+          ...(body.phase !== undefined && { phase: body.phase }),
+          ...(body.visibility !== undefined && { visibility: body.visibility }),
+          ...(body.isFeatured !== undefined && { isFeatured: body.isFeatured }),
+          ...(body.tags !== undefined && { tags: body.tags }),
+        },
+      })
+
+      return successResponse({ resource }, 200, origin)
+    } catch (error) {
+      console.error('Admin update resource error:', error)
+      return errorResponse('Internal server error', 500, origin)
+    }
+  }
+
+  if (event.httpMethod === 'DELETE' && path.includes('/admin/resources/')) {
+    try {
+      const id = path.split('/').pop() || ''
+      await prisma.resource.delete({ where: { id } })
+      return successResponse({ message: 'Resource deleted' }, 200, origin)
+    } catch (error) {
+      console.error('Admin delete resource error:', error)
+      return errorResponse('Internal server error', 500, origin)
+    }
+  }
+
   if (event.httpMethod === 'GET' && path.endsWith('/admin/submissions')) {
     try {
-      const submissions = await prisma.assignment.findMany({
-        include: { user: { select: { id: true, name: true, email: true } }, module: { select: { title: true, dayNumber: true } } },
+      const submissions = await prisma.assignmentSubmission.findMany({
+        include: {
+          user: { select: { id: true, name: true, email: true } },
+          assignment: { include: { module: { select: { title: true, dayNumber: true } } } },
+        },
         orderBy: { submittedAt: 'desc' },
       })
 
@@ -109,8 +350,8 @@ export const handler: NetlifyHandler = async (event) => {
           id: s.id,
           userName: s.user.name,
           userEmail: s.user.email,
-          moduleTitle: s.module.title,
-          dayNumber: s.module.dayNumber,
+          moduleTitle: s.assignment.module.title,
+          dayNumber: s.assignment.module.dayNumber,
           content: s.content,
           status: s.status,
           submittedAt: s.submittedAt,
@@ -132,7 +373,7 @@ export const handler: NetlifyHandler = async (event) => {
         return errorResponse('Invalid status', 400, origin)
       }
 
-      const submission = await prisma.assignment.update({
+      const submission = await prisma.assignmentSubmission.update({
         where: { id: submissionId },
         data: { status, reviewedAt: new Date() },
       })
