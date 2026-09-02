@@ -37,7 +37,8 @@ export function WeekAccordion({ weeks, completedDays, currentDayNumber }: WeekAc
   }
 
   const isDayCompleted = (dayNumber: number) => completedDays.includes(dayNumber)
-  const isDayLocked = (dayNumber: number) => dayNumber > (currentDayNumber ?? 0)
+  const maxCompleted = completedDays.length ? Math.max(...completedDays) : 0
+  const isDayLocked = (dayNumber: number) => dayNumber > maxCompleted + 1
 
   const getSessionType = (dayInWeek: number): Module['sessionType'] => {
     if (dayInWeek === 7) return 'QUIZ'

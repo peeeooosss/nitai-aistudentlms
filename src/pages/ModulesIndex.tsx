@@ -45,16 +45,12 @@ function WeekAccordion({
   week,
   modules,
   completedDays,
-  currentWeek,
-  currentDay,
   isOpen,
   onToggle,
 }: {
   week: Week
   modules: Module[]
   completedDays: number[]
-  currentWeek: number
-  currentDay: number
   isOpen: boolean
   onToggle: () => void
 }) {
@@ -120,12 +116,9 @@ function WeekAccordion({
                 .sort((a, b) => a.dayInWeek - b.dayInWeek)
                 .map((mod) => {
                   const isComplete = completedDays.includes(mod.dayNumber)
-                  const isCurrent =
-                    week.weekNumber === currentWeek &&
-                    mod.dayInWeek === (currentDay % 7 || 7)
-                  const isLocked =
-                    week.weekNumber > currentWeek ||
-                    (week.weekNumber === currentWeek && mod.dayInWeek > (currentDay % 7 || 7))
+                  const maxCompleted = completedDays.length ? Math.max(...completedDays) : 0
+                  const isCurrent = mod.dayNumber === maxCompleted + 1
+                  const isLocked = mod.dayNumber > maxCompleted + 1
                   const Icon = sessionIcons[mod.sessionType] || FileText
 
                   return (
@@ -253,8 +246,6 @@ export default function ModulesIndex() {
             week={week}
             modules={data.modules}
             completedDays={data.completedDays}
-            currentWeek={data.currentWeek}
-            currentDay={data.currentDay}
             isOpen={openWeek === week.weekNumber}
             onToggle={() =>
               setOpenWeek(openWeek === week.weekNumber ? null : week.weekNumber)
